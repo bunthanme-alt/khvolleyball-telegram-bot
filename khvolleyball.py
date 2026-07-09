@@ -243,13 +243,17 @@ def start_bot():
     bot_app.add_handler(CommandHandler("info", info_command))
     bot_app.add_handler(CommandHandler("testmode", testmode_command))
     
-    print("Telegram Bot Polling Started inside Thread...")
-    bot_app.run_polling()
+    if __name__ == "__main__":
+    import threading
+    import os
 
-# បង្ខំឱ្យប្រព័ន្ធចាប់ផ្តើមរត់ Bot ភ្លាមៗនៅពេល Gunicorn បើកហ្វាយនេះ
-threading.Thread(target=start_bot, daemon=True).start()
-
-if __name__ == "__main__":
-    # សម្រាប់រត់តេស្ត Local 🌟
+    # ១. បើក Flask Web Server ឱ្យរត់ក្នុង Background Thread ដើម្បីកុំឱ្យវាប្លុក Bot 🌟
     port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    flask_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port, use_reloader=False))
+    flask_thread.daemon = True
+    flask_thread.start()
+    print("Flask Web Server started in background thread...")
+    
+    # ២. ហៅ Telegram Bot ឱ្យរត់នៅលើ Main Thread ផ្ទាល់តែម្តង ទើបវាដំណើរការ Asyncio Polling បាន
+    print("Telegram Bot Polling Started on Main Thread...")
+    start_bot()
