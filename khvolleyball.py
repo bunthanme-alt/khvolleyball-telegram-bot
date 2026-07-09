@@ -244,16 +244,16 @@ def start_bot():
     bot_app.add_handler(CommandHandler("testmode", testmode_command))
     
     if __name__ == "__main__":
-    import threading
-    import os
+        import threading
+        import os
 
-    # ១. បើក Flask Web Server ឱ្យរត់ក្នុង Background Thread ដើម្បីកុំឱ្យវាប្លុក Bot 🌟
-    port = int(os.environ.get("PORT", 10000))
-    flask_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port, use_reloader=False))
-    flask_thread.daemon = True
-    flask_thread.start()
-    print("Flask Web Server started in background thread...")
+        # ១. បើក Flask Web Server ឱ្យរត់ក្នុង Background Thread ដើម្បីកុំឱ្យវាប្លុក Bot 🌟
+        port = int(os.environ.get("PORT", 10000))
+        flask_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port, use_reloader=False))
+        flask_thread.daemon = True
+        flask_thread.start()
+        print("Flask Web Server started in background thread...")
     
-    # ២. ហៅ Telegram Bot ឱ្យរត់នៅលើ Main Thread ផ្ទាល់តែម្តង ទើបវាដំណើរការ Asyncio Polling បាន
-    print("Telegram Bot Polling Started on Main Thread...")
-    start_bot()
+        # ២. ហៅ Telegram Bot ឱ្យរត់នៅលើ Main Thread ផ្ទាល់តែម្តង ទើបវាដំណើរការ Asyncio Polling បាន
+        print("Telegram Bot Polling Started on Main Thread...")
+        start_bot()
