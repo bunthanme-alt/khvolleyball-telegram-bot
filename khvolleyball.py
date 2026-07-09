@@ -250,6 +250,6 @@ def start_bot():
 threading.Thread(target=start_bot, daemon=True).start()
 
 if __name__ == "__main__":
-    # សម្រាប់រត់តេស្ត Local
+    # សម្រាប់រត់តេស្ត Local 🌟
     port = int(os.environ.get("PORT", 10000))
-    flask_app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port)
