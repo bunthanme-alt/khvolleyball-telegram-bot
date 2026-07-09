@@ -4,10 +4,10 @@ import threading
 from flask import Flask
 from telegram.ext import ApplicationBuilder, CommandHandler
 
-# ១. បង្កើត Web Server (Flask) សម្រាប់បោកប្រព័ន្ធ Render កុំឱ្យវាទាត់កូដយើងចោល
-flask_app = Flask(__name__)
+# បង្កើត Web Server (Flask) - ដូរឈ្មោះឱ្យត្រូវតាម Gunicorn 🌟
+app = Flask(__name__)
 
-@flask_app.route('/')
+@app.route('/')
 def home():
     return "Bot is Alive 24/7!"
 
