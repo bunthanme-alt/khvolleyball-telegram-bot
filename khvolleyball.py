@@ -222,7 +222,7 @@ async def info_command(update, context):
 
 # បង្កើតប្រព័ន្ធរត់ Bot នៅក្នុង Thread ដាច់ដោយឡែកមួយឱ្យត្រូវស្តង់ដារ Version 20.x 🌟
 def start_bot():
-    token = "8066577030:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0"
+    token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
     
     # ប្រើប្រាស់ ApplicationBuilder ឱ្យត្រូវតាមលក្ខខណ្ឌច្បាប់ទម្រង់របស់បណ្ណាល័យ
     bot_app = ApplicationBuilder().token(token).build()
