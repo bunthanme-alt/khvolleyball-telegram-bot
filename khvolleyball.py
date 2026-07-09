@@ -220,12 +220,14 @@ async def info_command(update, context):
     info_msg += "💡 (Admin អាចវាយ /setmap [លេខ] ដើម្បីដូរទីតាំងសញ្ញា 🌟 ជាក់ស្តែងបាន)"
     await update.message.reply_text(info_msg)
 
-# បង្កើតប្រព័ន្ធរត់ Bot នៅក្នុង Thread ដាច់ដោយឡែកមួយ
+# បង្កើតប្រព័ន្ធរត់ Bot នៅក្នុង Thread ដាច់ដោយឡែកមួយឱ្យត្រូវស្តង់ដារ Version 20.x 🌟
 def start_bot():
-    token = "80866577030:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0"
+    token = "8066577030:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0"
+    
+    # ប្រើប្រាស់ ApplicationBuilder ឱ្យត្រូវតាមលក្ខខណ្ឌច្បាប់ទម្រង់របស់បណ្ណាល័យ
     bot_app = ApplicationBuilder().token(token).build()
     
-    # បញ្ចូល Command Handlers ទាំងអស់
+    # បញ្ចូល Command Handlers ទាំងអស់ទៅក្នុង bot_app
     bot_app.add_handler(CommandHandler("join", join_command))
     bot_app.add_handler(CommandHandler("leave", leave_command))
     bot_app.add_handler(CommandHandler("list", list_command))
@@ -244,10 +246,10 @@ def start_bot():
     print("Telegram Bot Polling Started inside Thread...")
     bot_app.run_polling()
 
-# 🌟 ឱ្យប្រព័ន្ធចាប់ផ្តើមរត់ Bot ភ្លាមៗនៅពេល Gunicorn បើកហ្វាយនេះ
+# បង្ខំឱ្យប្រព័ន្ធចាប់ផ្តើមរត់ Bot ភ្លាមៗនៅពេល Gunicorn បើកហ្វាយនេះ
 threading.Thread(target=start_bot, daemon=True).start()
 
 if __name__ == "__main__":
-    # សម្រាប់រត់តេស្ត Local លើកុំព្យូទ័រ
+    # សម្រាប់រត់តេស្ត Local
     port = int(os.environ.get("PORT", 10000))
     flask_app.run(host='0.0.0.0', port=port)
