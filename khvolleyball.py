@@ -220,31 +220,34 @@ async def info_command(update, context):
     info_msg += "💡 (Admin អាចវាយ /setmap [លេខ] ដើម្បីដូរទីតាំងសញ្ញា 🌟 ជាក់ស្តែងបាន)"
     await update.message.reply_text(info_msg)
 
-def main() -> None:
-    token = "8066577030:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0"
+# បង្កើតប្រព័ន្ធរត់ Bot នៅក្នុង Thread ដាច់ដោយឡែកមួយ
+def start_bot():
+    token = "80866577030:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0"
+    bot_app = ApplicationBuilder().token(token).build()
     
-    # បើកដំណើរការ Web Server (Flask Thread)
-    threading.Thread(target=run_flask, daemon=True).start()
+    # បញ្ចូល Command Handlers ទាំងអស់
+    bot_app.add_handler(CommandHandler("join", join_command))
+    bot_app.add_handler(CommandHandler("leave", leave_command))
+    bot_app.add_handler(CommandHandler("list", list_command))
+    bot_app.add_handler(CommandHandler("clear", clear_command))
+    bot_app.add_handler(CommandHandler("shuffle", shuffle_command))
+    bot_app.add_handler(CommandHandler("manual", manual_command))
+    bot_app.add_handler(CommandHandler("win", win_command))
+    bot_app.add_handler(CommandHandler("stats", stats_command))
+    bot_app.add_handler(CommandHandler("calculate", calculate_command))
+    bot_app.add_handler(CommandHandler("setmap", setmap_command))
+    bot_app.add_handler(CommandHandler("setbooking", setbooking_command))
+    bot_app.add_handler(CommandHandler("settime", settime_command))
+    bot_app.add_handler(CommandHandler("info", info_command))
+    bot_app.add_handler(CommandHandler("testmode", testmode_command))
     
-    # បើកដំណើរការ Telegram Bot Polling
-    app = ApplicationBuilder().token(token).build()
-    app.add_handler(CommandHandler("join", join_command))
-    app.add_handler(CommandHandler("leave", leave_command))
-    app.add_handler(CommandHandler("list", list_command))
-    app.add_handler(CommandHandler("clear", clear_command))
-    app.add_handler(CommandHandler("shuffle", shuffle_command))
-    app.add_handler(CommandHandler("manual", manual_command))
-    app.add_handler(CommandHandler("win", win_command))
-    app.add_handler(CommandHandler("stats", stats_command))
-    app.add_handler(CommandHandler("calculate", calculate_command))
-    app.add_handler(CommandHandler("setmap", setmap_command))
-    app.add_handler(CommandHandler("setbooking", setbooking_command))
-    app.add_handler(CommandHandler("settime", settime_command))
-    app.add_handler(CommandHandler("info", info_command))
-    app.add_handler(CommandHandler("testmode", testmode_command))
-    
-    print("Official Cloud Bot Started Running...")
-    app.run_polling()
+    print("Telegram Bot Polling Started inside Thread...")
+    bot_app.run_polling()
+
+# 🌟 ឱ្យប្រព័ន្ធចាប់ផ្តើមរត់ Bot ភ្លាមៗនៅពេល Gunicorn បើកហ្វាយនេះ
+threading.Thread(target=start_bot, daemon=True).start()
 
 if __name__ == "__main__":
-    main()
+    # សម្រាប់រត់តេស្ត Local លើកុំព្យូទ័រ
+    port = int(os.environ.get("PORT", 10000))
+    flask_app.run(host='0.0.0.0', port=port)
