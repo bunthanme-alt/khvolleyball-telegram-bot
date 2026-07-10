@@ -1,22 +1,14 @@
 import random
 import os
-import threading
 import asyncio
-from flask import Flask
+from flask import Flask, request
+from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler
 
-# ១. បង្កើត Web Server (Flask) សម្រាប់ UptimeRobot 🌟
+# ១. បង្កើត Web Server (Flask) 🌟
 flask_app = Flask(__name__)
 
-@flask_app.route('/')
-def home():
-    return "Bot is Alive 24/7!"
-
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    flask_app.run(host='0.0.0.0', port=port)
-
-# ២. កូដ និងទិន្នន័យដើមរបស់បងទាំងស្រុង ១០០%
+# ទិន្នន័យ និងមុខងារដើមរបស់បងទាំងអស់ ១០០% មិនឱ្យបាត់មួយតួអក្សរឡើយ
 players_data = {
     "BOY": "setter", "Yeun": "setter", 
     "Bunthan (Sky)": 3, "Samay": 3, "Sila": 3, 
@@ -41,12 +33,12 @@ times_database = {
     "1": "៥:០០ ល្ងាច ដល់ ៧:០០ យប់ (ម៉ោងលេងពេលយប់)",
     "2": "៥:៣០ ល្ងាច ដល់ ៧:៣០ យប់ (ម៉ោងលេងពេលយប់)",
     "3": "៦:០០ យប់ ដល់ ៨:០០ យប់ (ម៉ោងលេងពេលយប់)",
-    "4": "៦:check-in ៣០ យប់ ដល់ ៨:៣០ យប់ (ម៉ោងលេងពេលយប់)",
+    "4": "៦:៣០ យប់ ដល់ ៨:៣០ យប់ (ម៉ោងលេងពេលយប់)",
     
     "5": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
     "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១១:០០ ព្រឹក (លេង ២ម៉ោង)",
     "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:៣០ ព្រឹក ដល់ ១១:៣០ ព្រឹក (លេង ២ម៉ោង)",
-    "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ១០:check-in ៣០ ព្រឹក ដល់ ១២:០០ ថ្ងៃត្រង់ (លេង ១ម៉ោងកន្លះ)",
+    "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ១០:៣០ ព្រឹក ដល់ ១២:០០ ថ្ងៃត្រង់ (លេង ១ម៉ោងកន្លះ)",
     
     "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:០០ រសៀល ដល់ ៣:០០ រសៀល (លេង ២ម៉ោង)",
     "10": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:៣០ រសៀល ដល់ ៣:៣០ រសៀល (លេង ២ម៉ោង)",
@@ -57,14 +49,29 @@ times_database = {
 selected_court_key = "1"
 selected_time_key = "1"
 
+# បង្កើត Application របស់ Bot ទុកជា Global សម្រាប់ប្រើជាមួយ Webhook
+TOKEN = "8066577030:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0"
+tg_app = ApplicationBuilder().token(TOKEN).build()
+
+@flask_app.route('/')
+def home():
+    return "Bot is Alive 24/7 via Webhook!"
+
+# ទ្វារទទួលសារពី Telegram (Webhook Route) 🌟
+@flask_app.route(f'/{TOKEN}', methods=['POST'])
+def telegram_webhook():
+    update = Update.de_json(request.get_json(force=True), tg_app.bot)
+    # បោះទិន្នន័យទៅឱ្យ Asyncio Loop របស់ Bot ដំណើរការ
+    asyncio.run(tg_app.process_update(update))
+    return "OK", 200
+
 async def testmode_command(update, context):
     global today_players, player_stats
     today_players = []
     for p_name in players_data.keys():
         today_players.append(p_name)
         if p_name not in player_stats: player_stats[p_name] = {"win": 0, "loss": 0}
-    msg = f"🚀 [Test Mode] បានដំណើរការស្វ័យប្រវត្ត! បានបញ្ចូលវត្តមានកីឡាករផ្លូវការទាំង {len(today_players)} នាក់រួចរាល់សម្រាប់ការតេស្ត។\n\n💡 វាយ `/shuffle` ដើម្បីតេស្តមើលការចាប់គូបានភ្លាមៗបាទ!"
-    await update.message.reply_text(msg)
+    await update.message.reply_text(f"🚀 [Test Mode] បានបញ្ចូលវត្តមានទាំង {len(today_players)} នាក់រួចរាល់សម្រាប់ការតេស្ត។\n💡 វាយ `/shuffle` ដើម្បីចាប់គូបានភ្លាមៗ!")
 
 async def join_command(update, context):
     global today_players, player_stats
@@ -78,7 +85,7 @@ async def join_command(update, context):
         if matched_name not in player_stats: player_stats[matched_name] = {"win": 0, "loss": 0}
         await update.message.reply_text(f"✅ [{matched_name}] បានចុះឈ្មោះវត្តមានលេងថ្ងៃនេះហើយ។ (សរុប៖ {len(today_players)} នាក់)")
     else:
-        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ។")
+        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីរួចហើយបាទ។")
 
 async def leave_command(update, context):
     global today_players
@@ -248,39 +255,23 @@ async def info_command(update, context):
     info_msg += "💡 លក្ខខណ្ឌ៖ ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ/ទឹកអំពៅ ក្រុមចាញ់ជាអ្នកចេញបាទ។"
     await update.message.reply_text(info_msg)
 
-# 🛠️ មុខងារបិទបញ្ចប់ដោះស្រាយ Error ៖ ប្រើប្រព័ន្ធ Asyncio Runner ផ្លូវការរបស់ v20+ 🌟
-async def main_async():
-    token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
-    app = ApplicationBuilder().token(token).build()
-    
-    app.add_handler(CommandHandler("join", join_command))
-    app.add_handler(CommandHandler("leave", leave_command))
-    app.add_handler(CommandHandler("list", list_command))
-    app.add_handler(CommandHandler("clear", clear_command))
-    app.add_handler(CommandHandler("shuffle", shuffle_command))
-    app.add_handler(CommandHandler("manual", manual_command))
-    app.add_handler(CommandHandler("win", win_command))
-    app.add_handler(CommandHandler("stats", stats_command))
-    app.add_handler(CommandHandler("calculate", calculate_command))
-    app.add_handler(CommandHandler("setmap", setmap_command))
-    app.add_handler(CommandHandler("setbooking", setbooking_command))
-    app.add_handler(CommandHandler("settime", settime_command))
-    app.add_handler(CommandHandler("info", info_command))
-    app.add_handler(CommandHandler("testmode", testmode_command))
-    
-    # បើកដំណើរការ Polling តាម Async Mode ដើម្បីកុំឱ្យជាន់ Loop ជាមួយ Web Server 🌟
-    async with app:
-        await app.initialize()
-        await app.start()
-        print("Telegram Bot Polling Started via Asyncio Loop...")
-        await app.updater.start_polling(drop_pending_updates=True)
-        while True:
-            await asyncio.sleep(3600)
+# ភ្ជាប់ Command ទាំងអស់ទៅកាន់ Bot
+tg_app.add_handler(CommandHandler("join", join_command))
+tg_app.add_handler(CommandHandler("leave", leave_command))
+tg_app.add_handler(CommandHandler("list", list_command))
+tg_app.add_handler(CommandHandler("clear", clear_command))
+tg_app.add_handler(CommandHandler("shuffle", shuffle_command))
+tg_app.add_handler(CommandHandler("manual", manual_command))
+tg_app.add_handler(CommandHandler("win", win_command))
+tg_app.add_handler(CommandHandler("stats", stats_command))
+tg_app.add_handler(CommandHandler("calculate", calculate_command))
+tg_app.add_handler(CommandHandler("setmap", setmap_command))
+tg_app.add_handler(CommandHandler("setbooking", setbooking_command))
+tg_app.add_handler(CommandHandler("settime", settime_command))
+tg_app.add_handler(CommandHandler("info", info_command))
+tg_app.add_handler(CommandHandler("testmode", testmode_command))
 
 if __name__ == "__main__":
-    # ១. បើក Flask Web Server ទៅ Background
-    threading.Thread(target=run_flask, daemon=True).start()
-    print("Flask Web Server started in background thread...")
-    
-    # ២. រត់ Main Bot តាមរយៈ Asyncio Event Loop 🌟
-    asyncio.run(main_async())
+    # បើក Flask Server ធម្មតាតាមស្ដង់ដារ (លែងប្រើ Threading ជាន់គ្នា) 🌟
+    port = int(os.environ.get("PORT", 10000))
+    flask_app.run(host='0.0.0.0', port=port)
