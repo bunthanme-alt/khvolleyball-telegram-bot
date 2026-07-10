@@ -3,7 +3,8 @@ import os
 import threading
 import asyncio
 from flask import Flask
-from telegram.ext import ApplicationBuilder, CommandHandler
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # ១. បង្កើត Web Server (Flask) សម្រាប់ UptimeRobot ដាស់កុំឱ្យ Render Sleep 🌟
 flask_app = Flask(__name__)
@@ -16,7 +17,7 @@ def run_flask():
     port = int(os.environ.get("PORT", 10000))
     flask_app.run(host='0.0.0.0', port=port)
 
-# ២. ទិន្នន័យ និងមុខងារដើមរបស់បងទាំងអស់ ១០០% មិនឱ្យបាត់មួយតួអក្សរឡើយ
+# ២. កូដ និងទិន្នន័យដើមរបស់បងទាំងស្រុង ១០០%
 # បញ្ជីទិន្នន័យ៖ "setter"=ប៉ះសេ, 3=ល្អ, 2=ល្អបង្គួរ, 1=មធ្យម
 players_data = {
     "BOY": "setter", "Yeun": "setter", 
@@ -46,7 +47,7 @@ times_database = {
     "1": "៥:០០ ល្ងាច ដល់ ៧:០០ យប់ (ម៉ោងលេងពេលយប់)",
     "2": "៥:៣០ ល្ងាច ដល់ ៧:៣០ យប់ (ម៉ោងលេងពេលយប់)",
     "3": "៦:០០ យប់ ដល់ ៨:០០ យប់ (ម៉ោងលេងពេលយប់)",
-    "4": "៦:៣០ យប់ ដល់ ៨:check-in ៣០ យប់ (ម៉ោងលេងពេលយប់)",
+    "4": "៦:៣០ យប់ ដល់ ៨:៣០ យប់ (ម៉ោងលេងពេលយប់)",
     
     "5": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
     "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១១:០០ ព្រឹក (លេង ២ម៉ោង)",
@@ -63,7 +64,7 @@ selected_court_key = "1"
 selected_time_key = "1"
 
 # 🌟 មុខងារពិសេសសម្រាប់ដាក់សមាជិកតេស្តទាំងអស់ស្វ័យប្រវត្ត
-async def testmode_command(update, context):
+async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, player_stats
     today_players = []
     
@@ -78,7 +79,7 @@ async def testmode_command(update, context):
     await update.message.reply_text(msg)
 
 # ១. មុខងារចុះឈ្មោះវត្តមាន (Check-in)
-async def join_command(update, context):
+async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, player_stats
     args = context.args
     name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
@@ -98,7 +99,7 @@ async def join_command(update, context):
         await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ។")
 
 # ២. មុខងារដកឈ្មោះវត្តមានចេញ
-async def leave_command(update, context):
+async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players
     args = context.args
     name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
@@ -116,7 +117,7 @@ async def leave_command(update, context):
         await update.message.reply_text(f"💡 រកមិនឃើញឈ្មោះ [{matched_name}] ក្នុងបញ្ជីវត្តមានថ្ងៃនេះទេ។")
 
 # ៣. មុខងារមើលបញ្ជីឈ្មោះវត្តមាន
-async def list_command(update, context):
+async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not today_players:
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
         return
@@ -125,7 +126,7 @@ async def list_command(update, context):
     await update.message.reply_text(msg)
 
 # ៤. មុខងារលុបទិន្នន័យវត្តមានចោលទាំងអស់
-async def clear_command(update, context):
+async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, current_teams, match_score
     today_players = []
     current_teams = {"team_a": [], "team_b": []}
@@ -133,12 +134,12 @@ async def clear_command(update, context):
     await update.message.reply_text(f"♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់! ត្រៀមសម្រាប់លេងថ្ងៃថ្មី។")
 
 # ៥. មុខងារចាប់គូស្វ័យប្រវត្ត
-async def shuffle_command(update, context):
+async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, match_score
     total_count = len(today_players)
     
     if total_count < 2:
-        await update.message.reply_text("❌ ចំនួនកីឡាករតិចពេក (យ៉ាងហោចណាស់ ២នាក់)! សូមវាយ /join ចុះឈ្មោះសិនបាទ。")
+        await update.message.reply_text("❌ ចំនួនកីឡាករតិចពេក (យ៉ាងហោចណាស់ ២នាក់)! សូមវាយ /join ចុះឈ្មោះសិនបាទ។")
         return
         
     match_score = {"a": 0, "b": 0}
@@ -202,11 +203,11 @@ async def shuffle_command(update, context):
     
     msg += f"🔹 ក្រុម A: {', '.join(format_a)}\n"
     msg += f"🔸 ក្រុម B: {', '.join(format_b)}\n\n"
-    msg += "📢 របៀបលេង៖ ចប់មួយសិតៗ វាយ /win a ឬ /win b ដើម្បីកត់ពិន្ទុភ្លាមៗ។"
+    msg += "📢 របៀបលេង៖ ចប់មួយសិតៗ វាយ /win a ឬ /win b ដើម្បីកត់ពិន្ទុភ្លាមៗ। "
     await update.message.reply_text(msg)
 
 # ៦. មុខងារចាប់គូដោយដៃផ្ទាល់ (Manual Setup)
-async def manual_command(update, context):
+async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, player_stats, match_score
     args = context.args
     v_sign = "v" if "v" in args else ("vs" if "vs" in args else None)
@@ -237,7 +238,7 @@ async def manual_command(update, context):
         await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
 # ៧. មុខងារកត់ត្រាឈ្នះចាញ់តាមសិត
-async def win_command(update, context):
+async def win_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score
     args = context.args
     if not args or args[0].lower() not in ["a", "b"]:
@@ -259,7 +260,7 @@ async def win_command(update, context):
     await update.message.reply_text(f"🏆 កត់ត្រាសិតរួចរាល់! ក្រុមដែលឈ្នះគឺ៖ ក្រុម {team_input.upper()} 🎉\n📊 ពិន្ទុការប្រកួតរួម៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
 # ៨. មុខងារមើលតារាងស្ថិតិឈ្នះចាញ់បុគ្គល
-async def stats_command(update, context):
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not player_stats:
         await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតនៅឡើយទេ។")
         return
@@ -270,7 +271,7 @@ async def stats_command(update, context):
     await update.message.reply_text(msg)
 
 # ៩. មុខងារគិតលុយ
-async def calculate_command(update, context):
+async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not current_teams["team_a"]:
         await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
         return
@@ -293,7 +294,7 @@ async def calculate_command(update, context):
         await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
 
 # ១០. មុខងារជ្រើសរើសតារាង
-async def setmap_command(update, context):
+async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_court_key
     args = context.args
     
@@ -309,7 +310,7 @@ async def setmap_command(update, context):
     await update.message.reply_text(f"🎯 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {courts_database[selected_court_key]['name']} ជោគជ័យ!")
 
 # ១១. មុខងារកែប្រែស្ថានភាពកក់តារាង
-async def setbooking_command(update, context):
+async def setbooking_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global courts_database
     args = context.args
     if len(args) < 2 or args[0] not in courts_database or args[1].lower() not in ["confirmed", "pending"]:
@@ -320,7 +321,7 @@ async def setbooking_command(update, context):
     await update.message.reply_text(f"📝 បានកែប្រែស្ថានភាពកក់តារាងលេខ {court_id} រួចរាល់បាទ។")
 
 # ១២. មុខងារជ្រើសរើសម៉ោងលេង
-async def settime_command(update, context):
+async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_time_key
     args = context.args
     if not args or args[0] not in times_database:
@@ -340,7 +341,7 @@ async def settime_command(update, context):
     await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងលេងទៅកាន់ជម្រើសទី {selected_time_key}៖ {times_database[selected_time_key]} ជោគជ័យ!")
 
 # ១៣. មុខងារមើលព័ត៌មានរួម
-async def info_command(update, context):
+async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     play_time_info = times_database[selected_time_key]
     
     info_msg = "ℹ️ --- ព័ត៌មានមិត្តភាពកីឡាពេលល្ងាច --- ℹ️\n\n"
@@ -361,7 +362,7 @@ async def info_command(update, context):
     
     await update.message.reply_text(info_msg)
 
-# 🛠️ បង្កើតមុខងារមេសម្រាប់គ្រប់គ្រង Asyncio Loop ឱ្យបានត្រឹមត្រូវ សម្រាប់ v20+ 🌟
+# 🛠️ មុខងារបិទបញ្ចប់ដោះស្រាយ Error ដាច់ស្រឡះ៖ ប្រើ Custom Async Loop ផ្លូវការរបស់ v20+ 🌟
 async def run_bot():
     token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
     app = ApplicationBuilder().token(token).build()
@@ -381,13 +382,12 @@ async def run_bot():
     app.add_handler(CommandHandler("info", info_command))
     app.add_handler(CommandHandler("testmode", testmode_command))
     
-    # ចាប់ផ្តើមរត់ប្រព័ន្ធ Polling តាមរយៈ Async context manager 
     async with app:
         await app.initialize()
         await app.start()
-        print("Telegram Bot Polling Started on Asyncio Loop...")
+        print("Telegram Bot Polling Started via Asyncio Loop...")
         await app.updater.start_polling()
-        # រក្សាទុកឱ្យ Bot រត់រហូត
+        # រក្សាទុក Loop ឱ្យរត់រហូតដើម្បីចាំទាញសារ
         while True:
             await asyncio.sleep(3600)
 
