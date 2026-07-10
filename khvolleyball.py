@@ -244,7 +244,7 @@ async def settime_command(update, context):
 async def info_command(update, context):
     play_time_info = times_database[selected_time_key]
     info_msg = "ℹ️ --- ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច --- ℹ️\n\n🏆 ការប្រគួត៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
-    info_msg += f"⏰ ម៉ោងលេង៖ {play_time_info}\n\n🗓️🏟️ —— បញ្ជីទីតាំងតារាងបាល់ទះ ——\n"
+    info_msg += f"⏰ ម៉ោងប្រគួត៖ {play_time_info}\n\n🗓️🏟️ —— បញ្ជីទីតាំងតារាងបាល់ទះ ——\n"
     for key, court in courts_database.items():
         status_emoji = "✅ [កក់រួចរាល់]" if court["booking"] == "Confirmed" else "🟡 [កំពុងកក់]"
         if key == selected_court_key: info_msg += f"📍 [ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n\n"
