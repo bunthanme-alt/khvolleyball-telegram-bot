@@ -202,7 +202,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     format_a = [format_player_name(p) for p in team_a]
     format_b = [format_player_name(p) for p in team_b]
         
-    msg = f"🏐 --- លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n"
+    msg = f"🏐 - លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n"
     msg += f"🔹 *ក្រុម A:* {', '.join(format_a)}\n"
     msg += "——————————————— Vs ———————————————\n"
     msg += f"🔸 *ក្រុម B:* {', '.join(format_b)}\n\n"
