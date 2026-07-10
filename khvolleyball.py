@@ -363,7 +363,7 @@ async def info_command(update, context):
 
 # 🛠️ បង្កើតមុខងារមេសម្រាប់គ្រប់គ្រង Asyncio Loop ឱ្យបានត្រឹមត្រូវ សម្រាប់ v20+ 🌟
 async def run_bot():
-    token = "8066577030:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0"
+    token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
     app = ApplicationBuilder().token(token).build()
     
     app.add_handler(CommandHandler("join", join_command))
