@@ -50,7 +50,7 @@ selected_court_key = "1"
 selected_time_key = "1"
 
 # បង្កើត Application របស់ Bot ទុកជា Global សម្រាប់ប្រើជាមួយ Webhook
-TOKEN = "8066577030:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0"
+TOKEN = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
 tg_app = ApplicationBuilder().token(TOKEN).build()
 
 @flask_app.route('/')
