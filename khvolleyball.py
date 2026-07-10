@@ -1,6 +1,7 @@
 import random
 import os
 import threading
+import asyncio
 from flask import Flask
 from telegram.ext import ApplicationBuilder, CommandHandler
 
@@ -15,7 +16,7 @@ def run_flask():
     port = int(os.environ.get("PORT", 10000))
     flask_app.run(host='0.0.0.0', port=port)
 
-# ២. កូដ និងទិន្នន័យដើមរបស់បងទាំងស្រុង ១០០%
+# ២. ទិន្នន័យ និងមុខងារដើមរបស់បងទាំងអស់ ១០០% មិនឱ្យបាត់មួយតួអក្សរឡើយ
 # បញ្ជីទិន្នន័យ៖ "setter"=ប៉ះសេ, 3=ល្អ, 2=ល្អបង្គួរ, 1=មធ្យម
 players_data = {
     "BOY": "setter", "Yeun": "setter", 
@@ -43,9 +44,9 @@ courts_database = {
 # បញ្ជីជម្រើសម៉ោងលេងទាំង ១២
 times_database = {
     "1": "៥:០០ ល្ងាច ដល់ ៧:០០ យប់ (ម៉ោងលេងពេលយប់)",
-    "2": "៥:check-in ៣០ ល្ងាច ដល់ ៧:៣០ យប់ (ម៉ោងលេងពេលយប់)",
+    "2": "៥:៣០ ល្ងាច ដល់ ៧:៣០ យប់ (ម៉ោងលេងពេលយប់)",
     "3": "៦:០០ យប់ ដល់ ៨:០០ យប់ (ម៉ោងលេងពេលយប់)",
-    "4": "៦:៣០ យប់ ដល់ ៨:៣០ យប់ (ម៉ោងលេងពេលយប់)",
+    "4": "៦:៣០ យប់ ដល់ ៨:check-in ៣០ យប់ (ម៉ោងលេងពេលយប់)",
     
     "5": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
     "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១១:០០ ព្រឹក (លេង ២ម៉ោង)",
@@ -360,14 +361,9 @@ async def info_command(update, context):
     
     await update.message.reply_text(info_msg)
 
-def main() -> None:
+# 🛠️ បង្កើតមុខងារមេសម្រាប់គ្រប់គ្រង Asyncio Loop ឱ្យបានត្រឹមត្រូវ សម្រាប់ v20+ 🌟
+async def run_bot():
     token = "8066577030:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0"
-    
-    # ៣. បើកដំណើរការ Flask Thread ទៅ Background មុននឹង Polling 🌟
-    threading.Thread(target=run_flask, daemon=True).start()
-    print("Flask Web Server started in background thread...")
-    
-    print("Telegram Bot Polling Started on Main Thread...")
     app = ApplicationBuilder().token(token).build()
     
     app.add_handler(CommandHandler("join", join_command))
@@ -385,7 +381,20 @@ def main() -> None:
     app.add_handler(CommandHandler("info", info_command))
     app.add_handler(CommandHandler("testmode", testmode_command))
     
-    app.run_polling()
+    # ចាប់ផ្តើមរត់ប្រព័ន្ធ Polling តាមរយៈ Async context manager 
+    async with app:
+        await app.initialize()
+        await app.start()
+        print("Telegram Bot Polling Started on Asyncio Loop...")
+        await app.updater.start_polling()
+        # រក្សាទុកឱ្យ Bot រត់រហូត
+        while True:
+            await asyncio.sleep(3600)
 
 if __name__ == "__main__":
-    main()
+    # ១. បើកដំណើរការ Flask Thread ទៅ Background 🌟
+    threading.Thread(target=run_flask, daemon=True).start()
+    print("Flask Web Server started in background thread...")
+    
+    # ២. ហៅឱ្យរត់ប្រព័ន្ធ Asyncio Loop ផ្លូវការសម្រាប់ Main Thread 🌟
+    asyncio.run(run_bot())
