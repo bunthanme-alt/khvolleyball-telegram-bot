@@ -285,7 +285,7 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         team_a, team_b = current_teams["team_a"], current_teams["team_b"]
         court_per_person = court_fee / (len(team_a) + len(team_b))
         loser_addon_per_person = total_drinks_fee / len(team_b)
-        report = f"💰 -- របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ -- 💰\n\n💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n🍹 ថ្លៃភេសជ្ជៈសរុប (ក្រុមចាញ់)៖ {total_drinks_fee:,.0f} រៀល\n"
+        report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n🍹 ថ្លៃភេសជ្ជៈសរុប (ក្រុមចាញ់)៖ {total_drinks_fee:,.0f} រៀល\n"
         report += f"💵 ក្រុម A (ឈ្នះ) ចេញម្នាក់៖ {court_per_person:,.0f} រៀល\n🍹 ក្រុម B (ចាញ់) ចេញម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល\n"
         await update.message.reply_text(report)
     except ValueError: await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
