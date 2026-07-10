@@ -35,26 +35,28 @@ player_stats = {}
 match_score = {"a": 0, "b": 0}
 
 courts_database = {
-    "1": {"name": "តារាងបាល់ទះ (សាំហាន់-ជម្រើសទី១)", "link": "មិនទាន់មាន", "booking": "Confirmed"},
+    "1": {"name": "តារាងបាល់ទះ (សាំហាន-ជម្រើសទី១)", "link": "មិនទាន់មាន", "booking": "Confirmed"},
     "2": {"name": "តារាងបាល់ទះ (សែនសុខ-ថៃចាន់កំពូលមនុស្ស)", "link": "https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic", "booking": "Pending"},
     "3": {"name": "តារាងបាល់ទះ (ពូ PM-ប្រគួតដោយសុវត្ថិភាព/កុំបារម្មណ៍)", "link": "មិនទាន់មាន", "booking": "Pending"}
 }
 
+# រៀបចំ និងអាប់ដេតបញ្ជីម៉ោងប្រកួតថ្មីតាមសំណើរបស់បង 🌟
 times_database = {
     "1": "៥:៣០ ល្ងាច ដល់ ៧:០០ យប់",
     "2": "៥:៣០ ល្ងាច ដល់ ៧:៣០ យប់",
-    "3": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
-    "4": "៦:check-in ៣០ យប់ ដល់ ៨:៣០ យប់",
+    "3": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",  # រក្សាម៉ោងចាស់នៅលេខ ៣ ដដែល 🌟
+    "4": "៦:៣០ យប់ ដល់ ៨:០០ យប់",  # បន្ថែមម៉ោងថ្មីចូលមកត្រង់នេះយ៉ាងស្អាត 🌟
+    "5": "៦:check-in ៣០ យប់ ដល់ ៨:៣០ យប់",
     
-    "5": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
-    "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១១:០០ ព្រឹក (លេង ២ម៉ោង)",
-    "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:៣០ ព្រឹក ដល់ ១១:៣០ ព្រឹក (លេង ២ម៉ោង)",
-    "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ១០:check-in ៣០ ព្រឹក ដល់ ១២:០០ ថ្ងៃត្រង់ (លេង ១ម៉ោងកន្លះ)",
+    "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
+    "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១១:០០ ព្រឹក (លេង ២ម៉ោង)",
+    "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:៣០ ព្រឹក ដល់ ១១:៣០ ព្រឹក (លេង ២ម៉ោង)",
+    "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ១០:check-in ៣០ ព្រឹក ដល់ ១២:០០ ថ្ងៃត្រង់ (លេង ១ម៉ោងកន្លះ)",
     
-    "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:០០ រសៀល ដល់ ៣:០០ រសៀល (លេង ២ម៉ោង)",
-    "10": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:៣០ រសៀល ដល់ ៣:៣០ រសៀល (លេង ២ម៉ោង)",
-    "11": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ៣:០០ រសៀល ដល់ ៤:៣០ ល្ងាច (លេង ១ម៉ោងកន្លះ)",
-    "12": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ៣:០០ រសៀល ដល់ ៥:០០ ល្ងាច (លេង ២ម៉ោង)"
+    "10": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:០០ រសៀល ដល់ ៣:០០ រសៀល (លេង ២ម៉ោង)",
+    "11": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:៣០ រសៀល ដល់ ៣:៣០ រសៀល (លេង ២ម៉ោង)",
+    "12": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ៣:០០ រសៀល ដល់ ៤:៣០ ល្ងាច (លេង ១ម៉ោងកន្លះ)",
+    "13": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ៣:០០ រសៀល ដល់ ៥:០០ ល្ងាច (លេង ២ម៉ោង)"
 }
 
 selected_court_key = "1"
@@ -95,11 +97,18 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, player_stats
     args = context.args
-    name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
     
+    name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
     matched_name = name
+    
+    search_name = name.lower().strip()
     for p_name in players_data.keys():
-        if p_name.lower() == name.lower(): matched_name = p_name; break
+        if len(search_name) >= 3 and p_name.lower().startswith(search_name):
+            matched_name = p_name
+            break
+        elif p_name.lower() == search_name:
+            matched_name = p_name
+            break
         
     if matched_name not in today_players:
         today_players.append(matched_name)
@@ -114,12 +123,18 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
     
     matched_name = name
+    search_name = name.lower().strip()
     for p_name in today_players:
-        if p_name.lower() == name.lower(): matched_name = p_name; break
+        if len(search_name) >= 3 and p_name.lower().startswith(search_name):
+            matched_name = p_name
+            break
+        elif p_name.lower() == search_name:
+            matched_name = p_name
+            break
         
     if matched_name in today_players:
         today_players.remove(matched_name)
-        await update.message.reply_text(f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីវត្តមានថ្ងៃនេះ। (សល់៖ {len(today_players)} នាក់)")
+        await update.message.reply_text(f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីវត្តមានថ្ងៃនេះ។ (សល់៖ {len(today_players)} នាក់)")
     else:
         await update.message.reply_text(f"💡 រកមិនឃើញឈ្មោះ [{matched_name}] ក្នុងបញ្ជីវត្តមានថ្ងៃនេះទេ។")
 
@@ -227,7 +242,6 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
-# 🌟 កែសម្រួលប្រព័ន្ធ Logic ការបូកពិន្ទុ /win ឱ្យត្រឹមត្រូវតាមចំនួនសិតជាក់ស្តែង 🌟
 async def win_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score
     args = context.args
@@ -239,10 +253,8 @@ async def win_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
         
     team_input = args[0].lower()
-    match_score[team_input] += 1  # បូកសិតដែលឈ្នះពិតប្រាកដចូលប្រព័ន្ធរួម
+    match_score[team_input] += 1
     
-    # ជំហានកែសម្រួលផ្ដាច់ព្រ័ត្រ៖ សម្អាត និងរៀបចំទិន្នន័យស្ថិតិបុគ្គលម្នាក់ៗឡើងវិញ រាល់ពេលចុះពិន្ទុ
-    # ដើម្បីឱ្យលេខសិតស៊ីគ្នាជាមួយតម្លៃពិន្ទុការប្រកួតរួម A និង B ជានិច្ច
     for p in current_teams["team_a"]:
         matched = p
         for name in players_data.keys():
