@@ -1,14 +1,9 @@
 import random
 import os
-import asyncio
-from flask import Flask, request
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# ១. បង្កើត Web Server (Flask) 🌟
-flask_app = Flask(__name__)
-
-# ទិន្នន័យ និងមុខងារដើមរបស់បងទាំងអស់ ១០០% មិនឱ្យបាត់មួយតួអក្សរឡើយ
+# ១. ទិន្នន័យដើមរបស់បងទាំងអស់ ១០០% មិនឱ្យបាត់មួយតួអក្សរឡើយ
 players_data = {
     "BOY": "setter", "Yeun": "setter", 
     "Bunthan (Sky)": 3, "Samay": 3, "Sila": 3, 
@@ -49,23 +44,7 @@ times_database = {
 selected_court_key = "1"
 selected_time_key = "1"
 
-# បង្កើត Application របស់ Bot ទុកជា Global សម្រាប់ប្រើជាមួយ Webhook
-TOKEN = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
-tg_app = ApplicationBuilder().token(TOKEN).build()
-
-@flask_app.route('/')
-def home():
-    return "Bot is Alive 24/7 via Webhook!"
-
-# ទ្វារទទួលសារពី Telegram (Webhook Route) 🌟
-@flask_app.route(f'/{TOKEN}', methods=['POST'])
-def telegram_webhook():
-    update = Update.de_json(request.get_json(force=True), tg_app.bot)
-    # បោះទិន្នន័យទៅឱ្យ Asyncio Loop របស់ Bot ដំណើរការ
-    asyncio.run(tg_app.process_update(update))
-    return "OK", 200
-
-async def testmode_command(update, context):
+async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, player_stats
     today_players = []
     for p_name in players_data.keys():
@@ -73,7 +52,7 @@ async def testmode_command(update, context):
         if p_name not in player_stats: player_stats[p_name] = {"win": 0, "loss": 0}
     await update.message.reply_text(f"🚀 [Test Mode] បានបញ្ចូលវត្តមានទាំង {len(today_players)} នាក់រួចរាល់សម្រាប់ការតេស្ត។\n💡 វាយ `/shuffle` ដើម្បីចាប់គូបានភ្លាមៗ!")
 
-async def join_command(update, context):
+async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, player_stats
     args = context.args
     name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
@@ -87,7 +66,7 @@ async def join_command(update, context):
     else:
         await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីរួចហើយបាទ។")
 
-async def leave_command(update, context):
+async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players
     args = context.args
     name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
@@ -100,18 +79,18 @@ async def leave_command(update, context):
     else:
         await update.message.reply_text(f"💡 រកមិនឃើញឈ្មោះ [{matched_name}] ក្នុងបញ្ជីវត្តមានទេទេ។")
 
-async def list_command(update, context):
+async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not today_players:
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
         return
     await update.message.reply_text(f"📋 --- បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់) --- 📋\n\n" + ", ".join(today_players))
 
-async def clear_command(update, context):
+async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, current_teams, match_score
     today_players = []; current_teams = {"team_a": [], "team_b": []}; match_score = {"a": 0, "b": 0}
     await update.message.reply_text(f"♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
 
-async def shuffle_command(update, context):
+async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, match_score
     total_count = len(today_players)
     if total_count < 2:
@@ -159,7 +138,7 @@ async def shuffle_command(update, context):
     msg = f"🏐 --- លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n🔹 ក្រុម A: {', '.join([format_player_name(p) for p in team_a])}\n🔸 ក្រុម B: {', '.join([format_player_name(p) for p in team_b])}\n\n📢 វាយ /win a ឬ /win b ដើម្បីកត់ពិន្ទុភ្លាមៗ។"
     await update.message.reply_text(msg)
 
-async def manual_command(update, context):
+async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, player_stats, match_score
     args = context.args
     v_sign = "v" if "v" in args else ("vs" if "vs" in args else None)
@@ -176,7 +155,7 @@ async def manual_command(update, context):
         await update.message.reply_text(f"🏐 --- លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n🔹 ក្រុម A: {', '.join(team_a)}\n🔸 ក្រុម B: {', '.join(team_b)}")
     except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
-async def win_command(update, context):
+async def win_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score
     args = context.args
     if not args or args[0].lower() not in ["a", "b"]:
@@ -192,7 +171,7 @@ async def win_command(update, context):
     for p in losers: player_stats[p] = player_stats.get(p, {"win": 0, "loss": 0}); player_stats[p]["loss"] += 1
     await update.message.reply_text(f"🏆 ក្រុមដែលឈ្នះគឺ៖ ក្រុម {team_input.upper()} 🎉\n📊 រួម៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
-async def stats_command(update, context):
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not player_stats:
         await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតនៅឡើយទេ។")
         return
@@ -201,7 +180,7 @@ async def stats_command(update, context):
     for name, stat in sorted_stats: msg += f"👤 {name} ➡️ ឈ្នះ៖ {stat['win']} | ចាញ់៖ {stat['loss']}\n"
     await update.message.reply_text(msg)
 
-async def calculate_command(update, context):
+async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not current_teams["team_a"]:
         await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
         return
@@ -218,7 +197,7 @@ async def calculate_command(update, context):
         await update.message.reply_text(report)
     except ValueError: await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
 
-async def setmap_command(update, context):
+async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_court_key
     args = context.args
     if not args or args[0] not in courts_database:
@@ -228,7 +207,7 @@ async def setmap_command(update, context):
     selected_court_key = args[0]
     await update.message.reply_text(f"🎯 ជ្រើសរើសយក៖ {courts_database[selected_court_key]['name']} ជោគជ័យ!")
 
-async def setbooking_command(update, context):
+async def setbooking_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global courts_database
     args = context.args
     if len(args) < 2 or args[0] not in courts_database or args[1].lower() not in ["confirmed", "pending"]:
@@ -237,7 +216,7 @@ async def setbooking_command(update, context):
     court_id = args[0]; courts_database[court_id]["booking"] = "Confirmed" if args[1].lower() == "confirmed" else "Pending"
     await update.message.reply_text(f"📝 បានកែប្រែស្ថានភាពកក់តារាងលេខ {court_id} រួចរាល់។")
 
-async def settime_command(update, context):
+async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_time_key
     args = context.args
     if not args or args[0] not in times_database:
@@ -245,7 +224,7 @@ async def settime_command(update, context):
     selected_time_key = args[0]
     await update.message.reply_text(f"⏰ ផ្លាស់ប្តូរម៉ោងទៅកាន់៖ {times_database[selected_time_key]}")
 
-async def info_command(update, context):
+async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     play_time_info = times_database[selected_time_key]
     info_msg = f"ℹ️ --- ព័ត៌មានមិត្តភាពកីឡាពេលល្ងាច --- ℹ️\n\n⏰ ម៉ោងលេង៖ {play_time_info}\n\n🏟️ —— 📍 ទីតាំងតារាងបាល់ទះរបស់យើង 📍 ——\n"
     for key, court in courts_database.items():
@@ -255,23 +234,40 @@ async def info_command(update, context):
     info_msg += "💡 លក្ខខណ្ឌ៖ ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ/ទឹកអំពៅ ក្រុមចាញ់ជាអ្នកចេញបាទ។"
     await update.message.reply_text(info_msg)
 
-# ភ្ជាប់ Command ទាំងអស់ទៅកាន់ Bot
-tg_app.add_handler(CommandHandler("join", join_command))
-tg_app.add_handler(CommandHandler("leave", leave_command))
-tg_app.add_handler(CommandHandler("list", list_command))
-tg_app.add_handler(CommandHandler("clear", clear_command))
-tg_app.add_handler(CommandHandler("shuffle", shuffle_command))
-tg_app.add_handler(CommandHandler("manual", manual_command))
-tg_app.add_handler(CommandHandler("win", win_command))
-tg_app.add_handler(CommandHandler("stats", stats_command))
-tg_app.add_handler(CommandHandler("calculate", calculate_command))
-tg_app.add_handler(CommandHandler("setmap", setmap_command))
-tg_app.add_handler(CommandHandler("setbooking", setbooking_command))
-tg_app.add_handler(CommandHandler("settime", settime_command))
-tg_app.add_handler(CommandHandler("info", info_command))
-tg_app.add_handler(CommandHandler("testmode", testmode_command))
+def main() -> None:
+    # ៨0៦៦៥៧៧0៣0:AAEtFhPLBEBql1x1aHFp77UYH6XC1c-AwH0
+    TOKEN = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
+    
+    # បង្កើតប្រព័ន្ធ Bot កម្រិត v20+ ផ្លូវការ 🌟
+    app = ApplicationBuilder().token(TOKEN).build()
+    
+    app.add_handler(CommandHandler("join", join_command))
+    app.add_handler(CommandHandler("leave", leave_command))
+    app.add_handler(CommandHandler("list", list_command))
+    app.add_handler(CommandHandler("clear", clear_command))
+    app.add_handler(CommandHandler("shuffle", shuffle_command))
+    app.add_handler(CommandHandler("manual", manual_command))
+    app.add_handler(CommandHandler("win", win_command))
+    app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("calculate", calculate_command))
+    app.add_handler(CommandHandler("setmap", setmap_command))
+    app.add_handler(CommandHandler("setbooking", setbooking_command))
+    app.add_handler(CommandHandler("settime", settime_command))
+    app.add_handler(CommandHandler("info", info_command))
+    app.add_handler(CommandHandler("testmode", testmode_command))
+    
+    # ប្រព័ន្ធទាញយក Port របស់ Render ស្វ័យប្រវត្ត
+    port = int(os.environ.get("PORT", 10000))
+    
+    # ហៅរត់មុខងារ Webhook ផ្លូវការរបស់ប្រព័ន្ធកាត់បន្ថយ Error ទាំងស្រុង 🌟
+    # (លែងប្រើ Flask Server ខាងក្រៅនាំឱ្យជាន់ Loop គ្នា)
+    print(f"Starting Official Webhook on port {port}...")
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=port,
+        url_path=TOKEN,
+        webhook_url=f"https://khvolleyball.onrender.com/{TOKEN}"
+    )
 
 if __name__ == "__main__":
-    # បើក Flask Server ធម្មតាតាមស្ដង់ដារ (លែងប្រើ Threading ជាន់គ្នា) 🌟
-    port = int(os.environ.get("PORT", 10000))
-    flask_app.run(host='0.0.0.0', port=port)
+    main()
