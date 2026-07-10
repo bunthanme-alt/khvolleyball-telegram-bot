@@ -24,7 +24,7 @@ players_data = {
     "Bunthan (Sky)": 2, "Samay": 2, "Sila": 2, 
     "SAL": 1, "Borey": 2, "Lxy": 2, "Phirom": 2, 
     "Thona": 2, "Phatdon": 3, "Lyhour": 2, "Thinhhhh (Wick)": 3, "Salit": 2, "Ngonn": 2,
-    "Khai Titi": 1, "មិនា": 1
+    "Khai": 1, "មិនា": 1
 }
 
 left_spikers_list = ["Bunthan (Sky)", "Lyhour", "Lxy", "Salit"]
@@ -34,9 +34,9 @@ player_stats = {}
 match_score = {"a": 0, "b": 0}
 
 courts_database = {
-    "1": {"name": "តារាងបាល់ទះ (សាំហាន់)", "link": "មិនទាន់មាន", "booking": "Confirmed"},
+    "1": {"name": "តារាងបាល់ទះ (សាំហាន់-ជម្រើសទី១)", "link": "មិនទាន់មាន", "booking": "Confirmed"},
     "2": {"name": "តារាងបាល់ទះ (សែនសុខ-ថៃចាន់កំពូលមនុស្ស)", "link": "https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic", "booking": "Pending"},
-    "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "មិនទាន់មាន", "booking": "Pending"}
+    "3": {"name": "តារាងបាល់ទះ (ពូ PM-ប្រគួតដោយសុវត្ថិភាព)", "link": "មិនទាន់មាន", "booking": "Pending"}
 }
 
 times_database = {
@@ -148,7 +148,7 @@ async def shuffle_command(update, context):
     def format_player_name(p):
         tags = []
         if players_data.get(p) == "setter": tags.append("👋ប៉ះសេ")
-        if p in left_spikers_list: tags.append("💪ស្មាត់ឆ្វេង")
+        if p in left_spikers_list: tags.append("💪ឆ្វេងហ្ស៊ីន")
         return f"{p}({','.join(tags)})" if tags else p
         
     msg = f"🏐 --- លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n🔹 ក្រុម A: {', '.join([format_player_name(p) for p in team_a])}\n🔸 ក្រុម B: {', '.join([format_player_name(p) for p in team_b])}\n\n📢 វាយ /win a ឬ /win b ដើម្បីកត់ពិន្ទុភ្លាមៗ។"
@@ -218,7 +218,7 @@ async def setmap_command(update, context):
     global selected_court_key
     args = context.args
     if not args or args[0] not in courts_database:
-        msg = "❌ របៀបប្រើ៖ វាយ /setmap [លេខកូដ] ដើម្បីជ្រើសរើសតារាងលេងថ្ងៃនេះ៖\n\n"
+        msg = "❌ របៀបប្រើ៖ វាយ /setmap [លេខកូដ] ដើម្បីជ្រើសរើសតារាងប្រគួតថ្ងៃនេះ៖\n\n"
         for key, court in courts_database.items(): msg += f"👉 /setmap {key} ➡️ {court['name']}\n🔗 លីង Map៖ {court['link']}\n\n"
         await update.message.reply_text(msg); return
     selected_court_key = args[0]
@@ -239,12 +239,12 @@ async def settime_command(update, context):
     if not args or args[0] not in times_database:
         await update.message.reply_text("❌ របៀបប្រើ៖ វាយ `/settime [លេខកូដ]` ដើម្បីជ្រើសរើសម៉ោងប្រគួត៖\n\n"); return
     selected_time_key = args[0]
-    await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងលេងទៅកាន់ជម្រើសទី {selected_time_key}៖ {times_database[selected_time_key]} ជោគជ័យ!")
+    await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងប្រគួតទៅកាន់ជម្រើសទី {selected_time_key}៖ {times_database[selected_time_key]} ជោគជ័យ!")
 
 async def info_command(update, context):
     play_time_info = times_database[selected_time_key]
-    info_msg = "ℹ️ --- ព័ត៌មានកីឡាមិត្តភាពពេលល្ងាច --- ℹ️\n\n🏆 កម្មវិធី៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
-    info_msg += f"⏰ ម៉ោងលេង៖ {play_time_info}\n\n🏟️ —— 📍 បញ្ជីទីតាំងតារាងបាល់ទះ 📍 ——\n"
+    info_msg = "ℹ️ --- ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច --- ℹ️\n\n🏆 ការប្រគួត៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
+    info_msg += f"⏰ ម៉ោងលេង៖ {play_time_info}\n\n🗓️🏟️ —— បញ្ជីទីតាំងតារាងបាល់ទះ ——\n"
     for key, court in courts_database.items():
         status_emoji = "✅ [កក់រួចរាល់]" if court["booking"] == "Confirmed" else "🟡 [កំពុងកក់]"
         if key == selected_court_key: info_msg += f"📍 [ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n\n"
