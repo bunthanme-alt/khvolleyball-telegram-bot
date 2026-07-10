@@ -214,7 +214,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg += f"🔹 *ក្រុម A:* {', '.join(format_a)}\n"
     msg += "——————————————— Vs ———————————————\n"
     msg += f"🔸 *ក្រុម B:* {', '.join(format_b)}\n\n"
-    msg += "📢 វាយ `/win a` ឬ `/win b` ដើម្បីកត់ពិន្ទុភ្លាមៗបាទបង!"
+    msg += "👉 វាយ `/win a` ឬ `/win b` ដើម្បីកត់ពិន្ទុភ្លាមៗបាទបង!"
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
