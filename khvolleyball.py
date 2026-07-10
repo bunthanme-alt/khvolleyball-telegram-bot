@@ -2,9 +2,10 @@ import random
 import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
-from telegram.ext import ApplicationBuilder, CommandHandler
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# ១. បង្កើតប្រព័ន្ធបន្លំ Server យ៉ាងសាមញ្ញបំផុត ដើម្បីបោក Render កុំឱ្យវាលោត Failed 🌟
+# ១. ប្រព័ន្ធបន្លំ Server យ៉ាងសាមញ្ញបំផុត ដើម្បីបោក Render កុំឱ្យវាលោត Failed 🌟
 class FakeServer(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -34,7 +35,7 @@ player_stats = {}
 match_score = {"a": 0, "b": 0}
 
 courts_database = {
-    "1": {"name": "តារាងបាល់ទះ (សាំហាន់-ជម្រើសទី១)", "link": "មិនទាន់មាន", "booking": "Confirmed"},
+    "1": {"name": "តារាងបាល់ទះ (សាំហាន-ជម្រើសទី១)", "link": "មិនទាន់មាន", "booking": "Confirmed"},
     "2": {"name": "តារាងបាល់ទះ (សែនសុខ-ថៃចាន់កំពូលមនុស្ស)", "link": "https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic", "booking": "Pending"},
     "3": {"name": "តារាងបាល់ទះ (ពូ PM-ប្រគួតដោយសុវត្ថិភាព)", "link": "មិនទាន់មាន", "booking": "Pending"}
 }
@@ -59,7 +60,15 @@ times_database = {
 selected_court_key = "1"
 selected_time_key = "1"
 
-async def testmode_command(update, context):
+# 🌟 មុខងារពិសេសថ្មី៖ បង្រួមមកប្រើ Command រួមគ្នា /match 🌟
+async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = "🔥 *ចង់បែកញើស និងចង់ផឹកទឹកអំពៅហើយបងប្អូន!* 🥤\n\n"
+    msg += "🏐 ឥឡូវនេះប្រព័ន្ធកំពុងបើកស្វាគមន៍រកអ្នកចង់ធ្វើការប្រកួតល្ងាចនេះហើយបាទ!\n"
+    msg += "🔥 បញ្ជាក់៖ ល្ងាចនេះក្រុមណាប្រកួតចាញ់ដឹងតែចេញថ្លៃទឹកអំពៅដាច់ខាតហើយណា!\n\n"
+    msg += "👉 តោះ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា `/join` ដើម្បីចុះឈ្មោះវត្តមានចូលរួមប្រកួតដណ្តើមជ័យជំនះទាំងអស់គ្នាឱ្យបានលឿនៗបាទ!"
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, player_stats
     today_players = []
     for p_name in players_data.keys():
@@ -68,7 +77,7 @@ async def testmode_command(update, context):
     msg = f"🚀 [Test Mode] បានបញ្ចូលវត្តមានកីឡាករផ្លូវការទាំង {len(today_players)} នាក់រួចរាល់សម្រាប់ការតេស្ត។\n\n💡 វាយ `/shuffle` ដើម្បីតេស្តមើលការចាប់គូប្រកួតបានភ្លាមៗបាទ!"
     await update.message.reply_text(msg)
 
-async def join_command(update, context):
+async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, player_stats
     args = context.args
     name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
@@ -82,7 +91,7 @@ async def join_command(update, context):
     else:
         await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ។")
 
-async def leave_command(update, context):
+async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players
     args = context.args
     name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
@@ -95,18 +104,18 @@ async def leave_command(update, context):
     else:
         await update.message.reply_text(f"💡 រកមិនឃើញឈ្មោះ [{matched_name}] ក្នុងបញ្ជីវត្តមានថ្ងៃនេះទេ។")
 
-async def list_command(update, context):
+async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not today_players:
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
         return
     await update.message.reply_text(f"📋 --- បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់) --- 📋\n\n" + ", ".join(today_players))
 
-async def clear_command(update, context):
+async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, current_teams, match_score
     today_players = []; current_teams = {"team_a": [], "team_b": []}; match_score = {"a": 0, "b": 0}
     await update.message.reply_text(f"♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
 
-async def shuffle_command(update, context):
+async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, match_score
     total_count = len(today_players)
     if total_count < 2:
@@ -151,7 +160,7 @@ async def shuffle_command(update, context):
         if p in left_spikers_list: tags.append("💪ឆ្វេងហ្ស៊ីន")
         return f"{p}({','.join(tags)})" if tags else p
         
-    msg = f"🏐 --- លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n🔹 ក្រុម A: {', '.join([format_player_name(p) for p in team_a])}\n🔸 ក្រុម B: {', '.join([format_player_name(p) for p in team_b])}\n\n📢 វាយ /win a ឬ /win b ដើម្បីកត់ពិន្ទុភ្លាមៗ។"
+    msg = f"🏐 --- លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n🔹 ក្រុម A: {', '.join([format_player_name(p) for p in team_a])}\n🔸 ក្រុម B: {', '.join([format_player_name(p) for p in team_b])}\n\n📢 វាយ /win a ឬ /win b ដើម្បីកត់ពិន្ទុភ្លាមៗ।"
     await update.message.reply_text(msg)
 
 async def manual_command(update, context):
@@ -230,8 +239,11 @@ async def setbooking_command(update, context):
     if len(args) < 2 or args[0] not in courts_database or args[1].lower() not in ["confirmed", "pending"]:
         await update.message.reply_text("❌ របៀបប្រើ៖ /setbooking [លេខតារាង] [Confirmed ឬ Pending]")
         return
-    court_id = args[0]; courts_database[court_id]["booking"] = "Confirmed" if args[1].lower() == "confirmed" else "Pending"
-    await update.message.reply_text(f"📝 បានកែប្រែស្ថានភាពកក់តារាងលេខ {court_id} រួចរាល់បាទ។")
+    court_id = args[0]
+    courts_database[court_id]["booking"] = "Confirmed" if args[1].lower() == "confirmed" else "Pending"
+    
+    court_name = courts_database[court_id]["name"]
+    await update.message.reply_text(f"📝 បានកែប្រែស្ថានភាពកក់តារាងលេខ {court_id} រួចរាល់បាទ។ បានកក់តារាង ឈ្មោះ {court_name}")
 
 async def settime_command(update, context):
     global selected_time_key
@@ -258,7 +270,6 @@ def main() -> None:
     # បើកដំណើរការ Fake Server ទៅ Background Thread សម្រាប់បោក Render 🌟
     threading.Thread(target=start_fake_server, daemon=True).start()
     
-    # បើកប្រព័ន្ធ Telegram Polling ធម្មតាតាមទម្រង់ដើមចុងក្រោយបង្អស់
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("join", join_command))
     app.add_handler(CommandHandler("leave", leave_command))
@@ -274,6 +285,9 @@ def main() -> None:
     app.add_handler(CommandHandler("settime", settime_command))
     app.add_handler(CommandHandler("info", info_command))
     app.add_handler(CommandHandler("testmode", testmode_command))
+    
+    # ភ្ជាប់ Command រួមគ្នាថ្មី /match ជំនួស sweat & drink ចាស់ 🌟
+    app.add_handler(CommandHandler("match", match_command))
     
     print("Bot started polling standard mode successfully...")
     app.run_polling()
