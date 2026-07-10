@@ -227,7 +227,7 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if official_name.lower() == p.lower(): matched_name = official_name; break
             if matched_name not in player_stats: player_stats[matched_name] = {"win": 0, "loss": 0}
             
-        msg = f"🏐 --- លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n"
+        msg = f"🏐 - លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n"
         msg += f"🔹 *ក្រុម A:* {', '.join(team_a)}\n"
         msg += "——————————————— Vs ———————————————\n"
         msg += f"🔸 *ក្រុម B:* {', '.join(team_b)}"
