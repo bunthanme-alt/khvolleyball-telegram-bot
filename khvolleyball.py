@@ -60,7 +60,6 @@ times_database = {
 selected_court_key = "1"
 selected_time_key = "1"
 
-# 🌟 មុខងារពិសេសថ្មី៖ បង្រួមមកប្រើ Command រួមគ្នា /match 🌟
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "🔥 *ចង់បែកញើស និងចង់ផឹកទឹកអំពៅហើយបងប្អូន!* 🥤\n\n"
     msg += "🏐 ឥឡូវនេះប្រព័ន្ធកំពុងបើកស្វាគមន៍រកអ្នកចង់ធ្វើការប្រកួតល្ងាចនេះហើយបាទ!\n"
@@ -89,7 +88,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if matched_name not in player_stats: player_stats[matched_name] = {"win": 0, "loss": 0}
         await update.message.reply_text(f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។ (សរុប៖ {len(today_players)} នាក់)")
     else:
-        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ។")
+        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ。")
 
 async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players
@@ -160,10 +159,10 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if p in left_spikers_list: tags.append("💪ឆ្វេងហ្ស៊ីន")
         return f"{p}({','.join(tags)})" if tags else p
         
-    msg = f"🏐 --- លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n🔹 ក្រុម A: {', '.join([format_player_name(p) for p in team_a])}\n🔸 ក្រុម B: {', '.join([format_player_name(p) for p in team_b])}\n\n📢 វាយ /win a ឬ /win b ដើម្បីកត់ពិន្ទុភ្លាមៗ।"
+    msg = f"🏐 --- លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n🔹 ក្រុម A: {', '.join([format_player_name(p) for p in team_a])}\n🔸 ក្រុម B: {', '.join([format_player_name(p) for p in team_b])}\n\n📢 វាយ /win a ឬ /win b ដើម្បីកត់ពិន្ទុភ្លាមៗ។"
     await update.message.reply_text(msg)
 
-async def manual_command(update, context):
+async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, player_stats, match_score
     args = context.args
     v_sign = "v" if "v" in args else ("vs" if "vs" in args else None)
@@ -180,7 +179,7 @@ async def manual_command(update, context):
         await update.message.reply_text(f"🏐 --- លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) --- 🏐\n\n🔹 ក្រុម A: {', '.join(team_a)}\n🔸 ក្រុម B: {', '.join(team_b)}")
     except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
-async def win_command(update, context):
+async def win_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score
     args = context.args
     if not args or args[0].lower() not in ["a", "b"]:
@@ -196,7 +195,7 @@ async def win_command(update, context):
     for p in losers: player_stats[p] = player_stats.get(p, {"win": 0, "loss": 0}); player_stats[p]["loss"] += 1
     await update.message.reply_text(f"🏆 កត់ត្រាសិតរួចរាល់! ក្រុមដែលឈ្នះគឺ៖ ក្រុម {team_input.upper()} 🎉\n📊 ពិន្ទុការប្រកួតរួម៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
-async def stats_command(update, context):
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not player_stats:
         await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតនៅឡើយទេ។")
         return
@@ -205,7 +204,7 @@ async def stats_command(update, context):
     for name, stat in sorted_stats: msg += f"👤 {name} 🏆 ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
     await update.message.reply_text(msg)
 
-async def calculate_command(update, context):
+async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not current_teams["team_a"]:
         await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
         return
@@ -223,7 +222,7 @@ async def calculate_command(update, context):
         await update.message.reply_text(report)
     except ValueError: await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
 
-async def setmap_command(update, context):
+async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_court_key
     args = context.args
     if not args or args[0] not in courts_database:
@@ -233,19 +232,28 @@ async def setmap_command(update, context):
     selected_court_key = args[0]
     await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {courts_database[selected_court_key]['name']} ជោគជ័យ!")
 
-async def setbooking_command(update, context):
+# 🌟 កែសម្រួលប្រព័ន្ធ /setbooking ឱ្យបំបែកលទ្ធផលតាមស្ថានភាពជាក់ស្ដែង 🌟
+async def setbooking_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global courts_database
     args = context.args
     if len(args) < 2 or args[0] not in courts_database or args[1].lower() not in ["confirmed", "pending"]:
         await update.message.reply_text("❌ របៀបប្រើ៖ /setbooking [លេខតារាង] [Confirmed ឬ Pending]")
         return
-    court_id = args[0]
-    courts_database[court_id]["booking"] = "Confirmed" if args[1].lower() == "confirmed" else "Pending"
     
+    court_id = args[0]
+    status_input = args[1].lower()
+    
+    # រក្សាទុកតម្លៃចូល Database
+    courts_database[court_id]["booking"] = "Confirmed" if status_input == "confirmed" else "Pending"
     court_name = courts_database[court_id]["name"]
-    await update.message.reply_text(f"📝 បានកែប្រែស្ថានភាពកក់តារាងលេខ {court_id} រួចរាល់បាទ។ បានកក់តារាង ឈ្មោះ {court_name}")
+    
+    # Logic ឆែកមើលលក្ខខណ្ឌ Confirmed ឬ Pending ដើម្បីបង្ហាញអត្ថបទឱ្យត្រឹមត្រូវ
+    if status_input == "confirmed":
+        await update.message.reply_text(f"📝 បានកែប្រែស្ថានភាពកក់តារាងលេខ {court_id} រួចរាល់បាទ។ បានកក់តារាង ឈ្មោះ {court_name}")
+    else:
+        await update.message.reply_text(f"📝 បានកែប្រែស្ថានភាពកក់តារាងលេខ {court_id} រួចរាល់បាទ។ មិនទាន់បានកក់/កំពុងកក់ តារាង ឈ្មោះ {court_name}")
 
-async def settime_command(update, context):
+async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_time_key
     args = context.args
     if not args or args[0] not in times_database:
@@ -253,7 +261,7 @@ async def settime_command(update, context):
     selected_time_key = args[0]
     await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងប្រគួតទៅកាន់ជម្រើសទី {selected_time_key}៖ {times_database[selected_time_key]} ជោគជ័យ!")
 
-async def info_command(update, context):
+async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     play_time_info = times_database[selected_time_key]
     info_msg = "ℹ️ --- ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច --- ℹ️\n\n🏆 ការប្រគួត៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     info_msg += f"⏰ ម៉ោងប្រគួត៖ {play_time_info}\n\n🗓️🏟️ —— បញ្ជីទីតាំងតារាងបាល់ទះ ——\n"
@@ -285,8 +293,6 @@ def main() -> None:
     app.add_handler(CommandHandler("settime", settime_command))
     app.add_handler(CommandHandler("info", info_command))
     app.add_handler(CommandHandler("testmode", testmode_command))
-    
-    # ភ្ជាប់ Command រួមគ្នាថ្មី /match ជំនួស sweat & drink ចាស់ 🌟
     app.add_handler(CommandHandler("match", match_command))
     
     print("Bot started polling standard mode successfully...")
