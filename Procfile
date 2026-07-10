@@ -1,1 +1,1 @@
-worker: python khvolleyball.py
+web: python khvolleyball.py
