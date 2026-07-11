@@ -22,8 +22,8 @@ def start_fake_server():
 # ២. ទិន្នន័យ និងមុខងារដើមទាំងអស់ ១០០% 
 players_data = {
     "BOY": "setter", "Yeun": "setter", 
-    "Bunthan (Sky)": 2, "Samay": 2, "Sila": 2, 
-    "SAL": 1, "Borey": 2, "Lxy": 2, "Phirom": 2, 
+    "Bunthan(Sky)": 2, "Samay": 3, "Sila": 2, 
+    "Sal": 1, "Borey": 2, "Lxy": 2, "Phirom": 2, 
     "Thona": 2, "Phatdon": 3, "Lyhour": 2, "Thinhhhh(Wick)": 3, "Salit": 2, "Ngonn": 2,
     "Khai": 1, "មិនា": 1, "chaomey": 2
 }
@@ -94,8 +94,8 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             player_stats[p_name] = {"win": 0, "loss": 0}
             
     team_format = f"{total_to_add // 2} Vs {total_to_add - (total_to_add // 2)}" if args else "ទាំងអស់"
-    msg = f"🚀 [Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n"
-    msg += f"📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់បាទ।"
+    msg = f"[Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n"
+    msg += f"📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់"
     await update.message.reply_text(msg)
 
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -149,7 +149,7 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីបញ្ជីកីឡាករបម្រុងរួចរាល់។")
     elif matched_name in today_players:
         today_players.remove(matched_name)
-        msg = f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីវត្តមានថ្ងៃនេះ。"
+        msg = f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីវត្តមានថ្ងៃនេះ"
         if waiting_list:
             next_player = waiting_list.pop(0)
             today_players.append(next_player)
@@ -257,8 +257,8 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     def format_player_name(p):
         tags = []
-        if players_data.get(p) == "setter": tags.append("👋ប៉ះសេហ្ស៊ីន")
-        if p in left_spikers_list: tags.append("💪ឆ្វេងហ្ស៊ីន")
+        if players_data.get(p) == "setter": tags.append("ប៉ះសេហ្ស៊ីន")
+        if p in left_spikers_list: tags.append("ឆ្វេងហ្ស៊ីន")
         return f"{p}({','.join(tags)})" if tags else p
         
     format_a = [format_player_name(p) for p in team_a]
