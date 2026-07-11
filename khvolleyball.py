@@ -377,7 +377,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n"
     msg += f"🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n"
-    msg += "——————————————————————————\n\n"
+    msg += "—————————————————————————\n"
     
     sorted_stats = sorted(active_stats.items(), key=lambda x: x[1]["win"], reverse=True)
     for name, stat in sorted_stats: 
