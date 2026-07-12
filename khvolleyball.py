@@ -263,7 +263,6 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         if len(team_a) < size_a: team_a.append(p)
                         else: team_b.append(p)
             else:
-                # FIXED: បានតែកូដភ្ជាប់ពាក្យដែលដាច់ ត្រឡប់មកពេញលេញត្រឹមត្រូវ ១០០% រួចរាល់បាទបង 🌟
                 if len(team_a) < size_a and len(team_b) < size_b:
                     if weight_a < weight_b: team_a.append(p)
                     elif weight_b < weight_a: team_b.append(p)
@@ -361,47 +360,4 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         result_msg = f"🤝 លទ្ធផលថ្ងៃនេះ៖ ក្រុមទាំងពីរស្មើគ្នា {sets_a}-{sets_b}"
         
-    await update.message.reply_text(f"✅ [ប្រព័ន្ធបានកត់ត្រារួចរាល់] លេងបានសរុប៖ {total_sets} សិត\n\n{result_msg}\n\n💡 បើបងវាយច្រឡំលេខ អាចវាយ `/undo` ដើម្បីដកពិន្ទុនេះចេញវិញបានភ្លាមៗបាទ!")
-
-async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global match_score, previous_match_score, player_stats, previous_player_stats
-    if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
-        return
-        
-    match_score = dict(previous_match_score)
-    player_stats = {k: dict(v) for k, v in previous_player_stats.items()}
-    
-    previous_match_score = None
-    previous_player_stats = None
-            
-    await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
-
-async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    active_stats = {name: stat for name, stat in player_stats.items() if name in today_players}
-    
-    if not active_stats:
-        await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតសម្រាប់សមាជិកដែលមានវត្តមានថ្ងៃនេះទេ។")
-        return
-        
-    total_sets_played = match_score["a"] + match_score["b"]
-        
-    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n"
-    msg += f"🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n"
-    msg += "———————————————————————\n"
-    
-    sorted_stats = sorted(active_stats.items(), key=lambda x: x[1]["win"], reverse=True)
-    for name, stat in sorted_stats: 
-        msg += f"👤 {name} 🏆 ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
-    await update.message.reply_text(msg)
-
-async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not current_teams["team_a"]:
-        await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!"); return
-    args = context.args
-    if len(args) < 2:
-        await update.message.reply_text("❌ របៀបប្រើ៖ /calculate [ថ្លៃតារាង] [ថ្លៃទឹក]"); return
-    try:
-        court_fee = float(args[0]); total_drinks_fee = sum([float(arg) for arg in args[1:]])
-        team_a, team_b = current_teams["team_a"], current_teams["team_b"]
-        total_people = len(team_a) + len(team_b)
+    await update.message.reply_text(f"✅
