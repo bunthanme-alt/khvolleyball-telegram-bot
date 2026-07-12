@@ -176,7 +176,7 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if waiting_list:
             next_player = waiting_list.pop(0)
             today_players.append(next_player)
-            msg += f"\n🔄 💡 [ប្រកាស] កីឡាករបម្រុង [{next_player}] បានរត់ចូលមកជំនួសជាកីឡាករផ្លូវការស្វ័យប្រវត្ត! (សរុប៖ {len(today_players)}/12 នាក់)"
+            msg += f"\n🔄 💡 [ប្រកាស] កីឡាករសាលបម្រុង [{next_player}] បានរត់ចូលមកជំនួសជាកីឡាករផ្លូវការស្វ័យប្រវត្ត! (សរុប៖ {len(today_players)}/12 នាក់)"
         else:
             msg += f" (សល់៖ {len(today_players)} នាក់)"
         await update.message.reply_text(msg)
@@ -451,7 +451,7 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     court_name = courts_database[selected_court_key]['name']
     court_link = courts_database[selected_court_key]['link']
     
-    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ {court_link}", parse_mode="HTML")
+    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ {court_link}", parse_mode="HTML")
 
 async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_time_key
@@ -463,19 +463,19 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🛠️ FIXED: ប្ដូរប្រព័ន្ធផ្ញើសាររួមទាំងប៊ូតុងពណ៌ខៀវមកជា parse_mode="HTML" រឹងមាំ ១០០% 🌟
+# 🛠️ IMPROVED: កែសម្រួលមុខងារ /info ឱ្យរៀបចំតម្រឹមជួរចំកណ្ដាល និងប្ដូរ Icon ✅ រួចរាល់ ១០០% 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    info_msg = " - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច - \n\n🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
+    info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   </code>\n\n🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     
     if selected_court_key is not None:
         play_time_info = times_database[selected_time_key]
         info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    info_msg += "-----------------------\n\n 📍 <b>ទីតាំងតារាងបាល់ទះ</b> \n\n"
+    info_msg += "<code>-----------------------</code>\n\n<code>      📍 <b>ទីតាំងតារាងបាល់ទះ</b>      </code>\n\n"
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
-            status_emoji = "<a href='https://t.me/'>[កក់តារាងរួចរាល់]</a>"
+            status_emoji = "<a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>"
         else:
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
@@ -485,7 +485,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
         
         if i < total_courts:
-            info_msg += "-----------------------\n"
+            info_msg += "<code>-----------------------</code>\n"
             
     info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
     await update.message.reply_text(info_msg, parse_mode="HTML")
