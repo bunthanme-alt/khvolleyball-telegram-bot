@@ -75,10 +75,12 @@ def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
 
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = "🔥 *ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!* 🥤\n\n"
-    msg += "🏐 ឥឡូវនេះប្រព័ន្ធកំពុងបើកស្វាគមន៍រកអ្នកចង់ធ្វើការប្រកួតល្ងាចនេះបាទ!\n"
-    msg += "🔥 បញ្ជាក់៖ ល្ងាចនេះមានអ្នកចង់ផឹកទឹកអំពៅទេបាទ?!\n\n"
-    msg += "👉 តោះ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា `/join` ដើម្បីចុះឈ្មោះវត្តមានចូលរួមវិនិយោគប្រកួតដើម្បីសុខភាពនិងដណ្តើមជ័យជំនះទាំងអស់គ្នាឱ្យបានលឿនៗ!"
+    msg = """🔥 *ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!* 🥤
+
+🏐 ឥឡូវនេះប្រព័ន្ធកំពុងបើកស្វាគមន៍រកអ្នកចង់ធ្វើការប្រកួតល្ងាចនេះបាទ!
+🔥 បញ្ជាក់៖ ល្ងាចនេះមានអ្នកចង់ផឹកទឹកអំពៅទេបាទ?!
+
+👉 តោះ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា `/join` ដើម្បីចុះឈ្មោះវត្តមានចូលរួមវិនិយោគប្រកួតដើម្បីសុខភាពនិងដណ្តើមជ័យជំនះទាំងអស់គ្នាឱ្យបានលឿនៗ!"""
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -104,8 +106,7 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             player_stats[p_name] = {"win": 0, "loss": 0}
             
     team_format = f"{total_to_add // 2} Vs {total_to_add - (total_to_add // 2)}" if args else "ទាំងអស់"
-    msg = f"[Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n"
-    msg += f"📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់"
+    msg = f"[Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់"
     await update.message.reply_text(msg)
 
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -142,7 +143,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។ (កីឡាករផ្លូវការ៖ {len(today_players)}/12 នាក់)")
     else:
         waiting_list.append(matched_name)
-        await update.message.reply_text(f"⏳ តារាងពេញ ១២ នាក់ហើយ! បានបញ្ចូលឈ្មោះ [{matched_name}] ទៅក្នុងបញ្ជីកីឡាករបម្រុង (Waiting List ជួរទី {len(waiting_list)})")
+        await update.message.reply_text(f"⏳ តារាងពេញ ១២ នាក់ហើយ! បានបញ្ចូលឈ្មោះ [{matched_name}] ទៅក្នុងបញ្ជីកីឡាករកម្រុង (Waiting List ជួរទី {len(waiting_list)})")
 
 async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list
@@ -188,13 +189,9 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not today_players:
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
         return
-    msg = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់)\n"
-    msg += "-------------------------------\n"
-    msg += ", ".join(today_players)
+    msg = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់)\n-------------------------------\n" + ", ".join(today_players)
     if waiting_list:
-        msg += f"\n\n⏳ បញ្ជីកីឡាករបម្រុង ({len(waiting_list)} នាក់)៖\n"
-        msg += "-------------------------------\n"
-        msg += ", ".join(waiting_list)
+        msg += f"\n\n⏳ បញ្ជីកីឡាករបម្រុង ({len(waiting_list)} នាក់)៖\n-------------------------------\n" + ", ".join(waiting_list)
     await update.message.reply_text(msg)
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -202,7 +199,7 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     today_players = []; waiting_list = []; previous_match_score = None; previous_player_stats = None
     current_teams = {"team_a": [], "team_b": []}; match_score = {"a": 0, "b": 0}
     selected_court_key = None
-    await update.message.reply_text(f"♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
+    await update.message.reply_text("♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, previous_player_stats, player_stats, selected_court_key
@@ -291,11 +288,14 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     format_a = [format_player_name(p) for p in team_a]
     format_b = [format_player_name(p) for p in team_b]
         
-    msg = f"🏐 - លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n"
-    msg += f"🔹 *ក្រុម A:* {', '.join(format_a)}\n"
-    msg += "———— Vs ————\n"
-    msg += f"🔸 *ក្រុម B:* {', '.join(format_b)}\n\n"
-    msg += "📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: `/setscore 2 1` "
+    # 🛠️ FIXED: ប្ដូរមកប្រើប្រាស់ Triple Quotes ការពារកំហុសដាច់អក្សរជាដាច់ខាត 🌟
+    msg = f"""🏐 - លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) - 🏐
+
+🔹 *ក្រុម A:* {', '.join(format_a)}
+———— Vs ————
+🔸 *ក្រុម B:* {', '.join(format_b)}
+
+📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: `/setscore 2 1`"""
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -316,13 +316,15 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if official_name.lower() == p.lower(): matched_name = official_name; break
             if matched_name not in player_stats: player_stats[matched_name] = {"win": 0, "loss": 0}
             
-        msg = f"🏐 - លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n"
-        msg += f"🔹 *ក្រុម A:* {', '.join(team_a)}\n"
-        msg += "———— Vs ————\n"
-        msg += f"🔸 *ក្រុម B:* {', '.join(team_b)}"
+        msg = f"""🏐 - លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) - 🏐
+
+🔹 *ក្រុម A:* {', '.join(team_a)}
+———— Vs ————
+🔸 *ក្រុម B:* {', '.join(team_b)}"""
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
+# 🛠️ FIXED: ប្ដូរមកប្រើប្រាស់ Triple Quotes ការពារកំហុសដាច់អក្សរជាដាច់ខាត 🌟
 async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score, previous_match_score, previous_player_stats
     args = context.args
@@ -359,4 +361,45 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_sets = sets_a + sets_b
     
     if sets_a > sets_b:
-        result_msg = f"🎉 លទ្ធផលថ្ងៃនេះ៖ ក្រុម A ឈ្នះក្រុម B ដោយពិន
+        result_msg = f"🎉 លទ្ធផលថ្ងៃនេះ៖ ក្រុម A ឈ្នះក្រុម B ដោយពិន្ទុ {sets_a}-{sets_b}"
+    elif sets_b > sets_a:
+        result_msg = f"🎉 លទ្ធផលថ្ងៃនេះ៖ ក្រុម B ឈ្នះក្រុម A ដោយពិន្ទុ {sets_b}-{sets_a}"
+    else:
+        result_msg = f"🤝 លទ្ធផលថ្ងៃនេះ៖ ក្រុមទាំងពីរស្មើគ្នា {sets_a}-{sets_b}"
+        
+    msg_reply = f"""✅ [ប្រព័ន្ធបានកត់ត្រារួចរាល់] លេងបានសរុប៖ {total_sets} សិត
+
+{result_msg}
+
+💡 បើបងវាយច្រឡំលេខ អាចវាយ `/undo` ដើម្បីដកពិន្ទុនេះចេញវិញបានភ្លាមៗបាទ!"""
+    await update.message.reply_text(msg_reply)
+
+async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global match_score, previous_match_score, player_stats, previous_player_stats
+    if previous_match_score is None or previous_player_stats is None:
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
+        return
+        
+    match_score = dict(previous_match_score)
+    player_stats = {k: dict(v) for k, v in previous_player_stats.items()}
+    
+    previous_match_score = None
+    previous_player_stats = None
+            
+    await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
+
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    active_stats = {name: stat for name, stat in player_stats.items() if name in today_players}
+    
+    if not active_stats:
+        await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតសម្រាប់សមាជិកដែលមានវត្តមានថ្ងៃនេះទេ។")
+        return
+        
+    total_sets_played = match_score["a"] + match_score["b"]
+        
+    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n———————————————————————\n"
+    
+    sorted_stats = sorted(active_stats.items(), key=lambda x: x[1]["win"], reverse=True)
+    for name, stat in sorted_stats: 
+        msg += f"👤 {name} 🏆 ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
+    await update.message.reply_text(msg)
