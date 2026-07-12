@@ -424,8 +424,8 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
                          f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
                          f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
-                         f"💵 ក្រុម A (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល\n" \
-                         f"🍹 ក្រុម B (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល"
+                         f"💵 ក្រុម A (ឈ្នះ) ចេញម្នាក់៖ {court_per_person:,.0f} រៀល\n" \
+                         f"🍹 ក្រុម B (ចាញ់) ចេញម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល"
             else:
                 loser_addon_per_person = total_drinks_fee / len(team_a)
                 report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
