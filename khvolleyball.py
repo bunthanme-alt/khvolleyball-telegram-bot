@@ -402,10 +402,134 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg += f"👤 {name} 🏆 ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
     await update.message.reply_text(msg)
 
+# 🛠️ FIXED: ប្ដូរមកប្រើប្រាស់ Triple Quotes ការពារកំហុសដាច់អក្សរជាដាច់ខាត 🌟
 async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not current_teams["team_a"]:
         await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
         return
     args = context.args
     if len(args) < 2:
-        await update.message.reply_text("❌ របៀបប្រើ៖ /calculate
+        await update.message.reply_text("❌ របៀបប្រើ៖ /calculate [ថ្លៃតារាង] [ថ្លៃទឹក]")
+        return
+    try:
+        court_fee = float(args[0])
+        total_drinks_fee = sum([float(arg) for arg in args[1:]])
+        team_a = current_teams["team_a"]
+        team_b = current_teams["team_b"]
+        total_people = len(team_a) + len(team_b)
+        court_per_person = court_fee / total_people
+        
+        if match_score["a"] == match_score["b"]:
+            equal_share = (court_fee + total_drinks_fee) / total_people
+            report = f"""(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)
+
+💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល
+🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល
+
+🤝 លទ្ធផលប្រកួត៖ ស្មើគ្នា ({match_score['a']}-{match_score['b']}) ជានិយាម Fair Play
+💵 សមាជិកគ្រប់គ្នា (Toggle A និង B) ចេញស្មើគ្នា៖ {equal_share:,.0f} រៀល/ម្នាក់ បាទបង​​។"""
+        else:
+            if match_score["a"] > match_score["b"]:
+                loser_addon_per_person = total_drinks_fee / len(team_b)
+                report = f"""(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)
+
+💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល
+🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល
+
+💵 ក្រុម A (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល
+🍹 ក្រុម B (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល"""
+            else:
+                loser_addon_per_person = total_drinks_fee / len(team_a)
+                report = f"""(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)
+
+💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល
+🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល
+
+🍹 ក្រុម A (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល
+💵 ក្រុម B (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល"""
+        await update.message.reply_text(report)
+    except ValueError:
+        await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
+
+async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global selected_court_key
+    args = context.args
+    if not args or args[0] not in courts_database:
+        msg = "❌ របៀបប្រើ៖ វាយ /setmap [លេខកូដ] ដើម្បីជ្រើសរើសតារាងប្រគួតថ្ងៃនេះ៖\n\n"
+        for key, court in courts_database.items():
+            msg += f"👉 /setmap {key} ➡️ {court['name']}\n🔗 លីង Map៖ {court['link']}\n\n"
+        await update.message.reply_text(msg)
+        return
+    selected_court_key = args[0]
+    
+    court_name = courts_database[selected_court_key]['name']
+    court_link = courts_database[selected_court_key]['link']
+    
+    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ [កក់តារាងរួចរាល់](https://t.me/)\n🔗 លីង Map៖ {court_link}", parse_mode="Markdown")
+
+async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global selected_time_key
+    args = context.args
+    if not args or args[0] not in times_database:
+        await update.message.reply_text("❌ របៀបប្រើ៖ វាយ `/settime [លេខកូដ]` ដើម្បីជ្រើសរើសម៉ោងប្រគួត៖\n\n"); return
+    selected_time_key = args[0]
+    
+    chosen_time_text = times_database[selected_time_key]
+    await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងប្រគួតទៅកាន់៖ {chosen_time_text} ជោគជ័យ!")
+
+async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    info_msg = """ - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច - 
+
+🏆 ការប្រគួត៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព
+"""
+    if selected_court_key is not None:
+        play_time_info = times_database[selected_time_key]
+        info_msg += f"⏰ ម៉ោងប្រគួតបច្ចុប្បន្ន៖ {play_time_info}\n"
+        
+    info_msg += "-----------------------\n\n🗓️🏟️ — បញ្ជីទីតាំងតារាងបាល់ទះ —\n\n"
+    total_courts = len(courts_database)
+    for i, (key, court) in enumerate(courts_database.items(), start=1):
+        if selected_court_key is not None and key == selected_court_key:
+            status_emoji = "✅ [កក់តារាងរួចរាល់](https://t.me/)"
+        else:
+            status_emoji = "🟡 [មិនទាន់កក់តារាង]"
+        
+        if selected_court_key is not None and key == selected_court_key: 
+            info_msg += f"📍 [ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
+        else: 
+            info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
+        
+        if i < total_courts:
+            info_msg += "-----------------------\n"
+            
+    info_msg += "\n💡 លក្ខខណ្ឌ៖ ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ/ទឹកអំពៅ/ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
+    await update.message.reply_text(info_msg, parse_mode="Markdown")
+
+def main() -> None:
+    token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
+    
+    threading.Thread(target=start_fake_server, daemon=True).start()
+    
+    app = ApplicationBuilder().token(token).build()
+    app.add_handler(CommandHandler("join", join_command))
+    app.add_handler(CommandHandler("leave", leave_command))
+    app.add_handler(CommandHandler("list", list_command))
+    app.add_handler(CommandHandler("clear", clear_command))
+    app.add_handler(CommandHandler("cancel", cancel_command))
+    app.add_handler(CommandHandler("shuffle", shuffle_command))
+    app.add_handler(CommandHandler("manual", manual_command))
+    app.add_handler(CommandHandler("setscore", setscore_command))
+    app.add_handler(CommandHandler("undo", undo_command))
+    app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("calculate", calculate_command))
+    app.add_handler(CommandHandler("setmap", setmap_command))
+    app.add_handler(CommandHandler("settime", settime_command))
+    app.add_handler(CommandHandler("info", info_command))
+    app.add_handler(CommandHandler("testmode", testmode_command))
+    app.add_handler(CommandHandler("match", match_command))
+    
+    print("Bot started polling standard mode successfully...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
