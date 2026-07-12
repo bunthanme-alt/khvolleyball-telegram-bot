@@ -461,7 +461,7 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_time_key = args[0]
     
     chosen_time_text = times_database[selected_time_key]
-    await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងប្រគួតទៅកាន់៖ {chosen_time_text} ជោគជ័យ!")
+    await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោងដោយ៖ {chosen_time_text} ជោគជ័យ!")
 
 # 🛠️ FIXED: ប្ដូរប្រព័ន្ធផ្ញើសាររួមទាំងប៊ូតុងពណ៌ខៀវមកជា parse_mode="HTML" រឹងមាំ ១០០% 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -471,7 +471,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         play_time_info = times_database[selected_time_key]
         info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    info_msg += "-----------------------\n\n🗓️🏟️ — <b>បញ្ជីទីតាំងតារាងបាល់ទះ</b> —\n\n"
+    info_msg += "-----------------------\n\n🏟️ — <b>បញ្ជីទីតាំងតារាងបាល់ទះ</b> —\n\n"
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
