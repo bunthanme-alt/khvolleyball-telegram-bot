@@ -75,11 +75,11 @@ def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
 
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = "🔥 *ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!* 🥤\n\n" \
+    msg = "🔥 <b>ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!</b> 🥤\n\n" \
           "🏐 ឥឡូវនេះប្រព័ន្ធកំពុងបើកស្វាគមន៍រកអ្នកចង់ធ្វើការប្រកួតល្ងាចនេះបាទ!\n" \
           "🔥 បញ្ជាក់៖ ល្ងាចនេះមានអ្នកចង់ផឹកទឹកអំពៅទេបាទ?!\n\n" \
-          "👉 តោះ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា `/join` ដើម្បីចុះឈ្មោះវត្តមានចូលរួមវិនិយោគប្រកួតដើម្បីសុខភាពនិងដណ្តើមជ័យជំនះទាំងអស់គ្នាឱ្យបានលឿនៗ!"
-    await update.message.reply_text(msg, parse_mode="Markdown")
+          "👉 តោះ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា <code>/join</code> ដើម្បីចុះឈ្មោះវត្តមានចូលរួមវិនិយោគប្រកួតដើម្បីសុខភាពនិងដណ្តើមជ័យជំនះទាំងអស់គ្នាឱ្យបានលឿនៗ!"
+    await update.message.reply_text(msg, parse_mode="HTML")
 
 async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, player_stats
@@ -216,7 +216,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, match_score
     total_count = len(today_players)
     if total_count < 2:
-        await update.message.reply_text("❌ ចំនួនកីឡាករតិចពេក! សូមវាយ /join ចុះឈ្មោះសិនបាទបង。")
+        await update.message.reply_text("❌ ចំនួនកីឡាករតិចពេក! សូមវាយ /join ចុះឈ្មោះសិនបាទបង។")
         return
     match_score = {"a": 0, "b": 0}
     size_a = total_count // 2
@@ -287,11 +287,11 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     format_b = [format_player_name(p) for p in team_b]
         
     msg = f"🏐 - លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n" \
-          f"🔹 *ក្រុម A:* {', '.join(format_a)}\n" \
+          f"🔹 <b>ក្រុម A:</b> {', '.join(format_a)}\n" \
           f"———— Vs ————\n" \
-          f"🔸 *ក្រុម B:* {', '.join(format_b)}\n\n" \
-          f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: `/setscore 2 1`"
-    await update.message.reply_text(msg, parse_mode="Markdown")
+          f"🔸 <b>ក្រុម B:</b> {', '.join(format_b)}\n\n" \
+          f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
+    await update.message.reply_text(msg, parse_mode="HTML")
 
 async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, player_stats, match_score
@@ -312,10 +312,10 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if matched_name not in player_stats: player_stats[matched_name] = {"win": 0, "loss": 0}
             
         msg = f"🏐 - លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n" \
-              f"🔹 *ក្រុម A:* {', '.join(team_a)}\n" \
+              f"🔹 <b>ក្រុម A:</b> {', '.join(team_a)}\n" \
               f"———— Vs ————\n" \
-              f"🔸 *ក្រុម B:* {', '.join(team_b)}"
-        await update.message.reply_text(msg, parse_mode="Markdown")
+              f"🔸 <b>ក្រុម B:</b> {', '.join(team_b)}"
+        await update.message.reply_text(msg, parse_mode="HTML")
     except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
 async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -360,16 +360,15 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         result_msg = f"🤝 លទ្ធផលថ្ងៃនេះ៖ ក្រុមទាំងពីរស្មើគ្នា {sets_a}-{sets_b}"
         
-    # 🛠️ FIXED: សរសេរជាខ្សែអក្សរតំណភ្ជាប់ សុវត្ថិភាពបំផុត គ្មានថ្ងៃលោត Error ទៀតឡើយ 🌟
     msg_reply = f"✅ [ប្រព័ន្ធបានកត់ត្រារួចរាល់] លេងបានសរុប៖ {total_sets} សិត\n\n" \
                 f"{result_msg}\n\n" \
-                f"💡 បើបងវាយច្រឡំលេខ អាចវាយ `/undo` ដើម្បីដកពិន្ទុនេះចេញវិញបានភ្លាមៗបាទ!"
-    await update.message.reply_text(msg_reply)
+                f"💡 បើបងវាយច្រឡំលេខ អាចវាយ <code>/undo</code> ដើម្បីដកពិន្ទុនេះចេញវិញបានភ្លាមៗបាទ!"
+    await update.message.reply_text(msg_reply, parse_mode="HTML")
 
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ biographies")
         return
         
     match_score = dict(previous_match_score)
@@ -412,18 +411,28 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         total_people = len(team_a) + len(team_b)
         court_per_person = court_fee / total_people
         
-        msg_header = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n"
-        
         if match_score["a"] == match_score["b"]:
             equal_share = (court_fee + total_drinks_fee) / total_people
-            report = msg_header + f"🤝 លទ្ធផលប្រកួត៖ ស្មើគ្នា ({match_score['a']}-{match_score['b']}) ជានិយាម Fair Play\n💵 សមាជិកគ្រប់គ្នា (Toggle A និង B) ចេញស្មើគ្នា៖ {equal_share:,.0f} រៀល/ម្នាក់ បាទបង​​។"
+            report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
+                     f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
+                     f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
+                     f"🤝 លទ្ធផលប្រកួត៖ ស្មើគ្នា ({match_score['a']}-{match_score['b']}) ជានិយាម Fair Play\n" \
+                     f"💵 សមាជិកគ្រប់គ្នា (Toggle A និង B) ចេញស្មើគ្នា៖ {equal_share:,.0f} រៀល/ម្នាក់ បាទបង​​។"
         else:
             if match_score["a"] > match_score["b"]:
                 loser_addon_per_person = total_drinks_fee / len(team_b)
-                report = msg_header + f"💵 ក្រុម A (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល\n🍹 ក្រុម B (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល"
+                report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
+                         f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
+                         f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
+                         f"💵 ក្រុម A (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល\n" \
+                         f"🍹 ក្រុម B (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល"
             else:
                 loser_addon_per_person = total_drinks_fee / len(team_a)
-                report = msg_header + f"🍹 ក្រុម A (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល\n💵 ក្រុម B (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល"
+                report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
+                         f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
+                         f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
+                         f"🍹 ក្រុម A (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល\n" \
+                         f"💵 ក្រុម B (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល"
         await update.message.reply_text(report)
     except ValueError:
         await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
@@ -442,7 +451,7 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     court_name = courts_database[selected_court_key]['name']
     court_link = courts_database[selected_court_key]['link']
     
-    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ [កក់តារាងរួចរាល់](https://t.me/)\n🔗 លីង Map៖ {court_link}", parse_mode="Markdown")
+    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ {court_link}", parse_mode="HTML")
 
 async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_time_key
@@ -454,31 +463,32 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងប្រគួតទៅកាន់៖ {chosen_time_text} ជោគជ័យ!")
 
+# 🛠️ FIXED: ប្ដូរប្រព័ន្ធផ្ញើសាររួមទាំងប៊ូតុងពណ៌ខៀវមកជា parse_mode="HTML" រឹងមាំ ១០០% 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    info_msg = " - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច - \n\n🏆 ការប្រគួត៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
+    info_msg = " - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច - \n\n🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     
     if selected_court_key is not None:
         play_time_info = times_database[selected_time_key]
-        info_msg += f"⏰ ម៉ោងប្រគួតបច្ចុប្បន្ន៖ {play_time_info}\n"
+        info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    info_msg += "-----------------------\n\n🗓️🏟️ — បញ្ជីទីតាំងតារាងបាល់ទះ —\n\n"
+    info_msg += "-----------------------\n\n🗓️🏟️ — <b>បញ្ជីទីតាំងតារាងបាល់ទះ</b> —\n\n"
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
-            status_emoji = "✅ [កក់តារាងរួចរាល់](https://t.me/)"
+            status_emoji = "<a href='https://t.me/'>[កក់តារាងរួចរាល់]</a>"
         else:
             status_emoji = "🟡 [មិនទាន់កក់តារាង]"
         
         if selected_court_key is not None and key == selected_court_key: 
-            info_msg += f"📍 [ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
+            info_msg += f"📍 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
         else: 
             info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
         
         if i < total_courts:
             info_msg += "-----------------------\n"
             
-    info_msg += "\n💡 លក្ខខណ្ឌ៖ ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ/ទឹកអំពៅ/ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
-    await update.message.reply_text(info_msg, parse_mode="Markdown")
+    info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ/ទឹកអំពៅ/ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
+    await update.message.reply_text(info_msg, parse_mode="HTML")
 
 def main() -> None:
     token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
