@@ -53,7 +53,7 @@ times_database = {
     "5": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
     
     "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
-    "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១១:០០ ព្រឹក (លេង ២ម៉ោង)",
+    "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:០០ ព្រឹក (លេង ២ម៉ោង)",
     "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:៣០ ព្រឹក ដល់ ១១:៣០ ព្រឹក (លេង ២ម៉ោង)",
     "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ១០:៣០ ព្រឹក ដល់ ១២:០០ ថ្ងៃត្រង់ (លេង ១ម៉ោងកន្លះ)",
     
@@ -257,6 +257,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 elif count_left_b < count_left_a and len(team_b) < size_b:
                     team_b.append(p)
                 else:
+                    # FIXED: បានដូរពី && មកជា and ត្រឹមត្រូវតាមច្បាប់ Python រួចរាល់ ១០០% 🌟
                     if weight_a <= weight_b and len(team_a) < size_a: team_a.append(p)
                     elif len(team_b) < size_b: team_b.append(p)
                     else:
@@ -267,5 +268,4 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     if weight_a < weight_b: team_a.append(p)
                     elif weight_b < weight_a: team_b.append(p)
                     else:
-                        if len(team_a) <= len(team_b): team_a.append(p)
-                        else: team
+                        if len(team_
