@@ -187,9 +187,9 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not today_players:
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
         return
-    msg = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់)\n-----------------------------------------\n" + ", ".join(today_players)
+    msg = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់)\n--------------------------------------------\n" + ", ".join(today_players)
     if waiting_list:
-        msg += f"\n\n⏳ បញ្ជីកីឡាករបម្រុង ({len(waiting_list)} នាក់)៖\n-----------------------------------------\n" + ", ".join(waiting_list)
+        msg += f"\n\n⏳ បញ្ជីកីឡាករបម្រុង ({len(waiting_list)} នាក់)៖\n--------------------------------------------\n" + ", ".join(waiting_list)
     await update.message.reply_text(msg)
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -471,7 +471,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         play_time_info = times_database[selected_time_key]
         info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    info_msg += "<code>------------------------------</code>\n\n<code>      📍 <b>ទីតាំងតារាងបាល់ទះ</b>      </code>\n\n"
+    info_msg += "<code>-------------------------------------</code>\n\n<code>      📍 <b>ទីតាំងតារាងបាល់ទះ</b>      </code>\n\n"
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
@@ -485,7 +485,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
         
         if i < total_courts:
-            info_msg += "<code>------------------------------</code>\n"
+            info_msg += "<code>-------------------------------------</code>\n"
             
     info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
     await update.message.reply_text(info_msg, parse_mode="HTML")
