@@ -480,7 +480,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
         if selected_court_key is not None and key == selected_court_key: 
-            info_msg += f"📍 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
+            info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
         else: 
             info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
         
