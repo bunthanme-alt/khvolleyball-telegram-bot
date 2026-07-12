@@ -471,7 +471,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         play_time_info = times_database[selected_time_key]
         info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    info_msg += "-----------------------\n\n🏟️ — <b>ទីតាំងតារាងបាល់ទះ</b> —\n\n"
+    info_msg += "-----------------------\n\n 📍 <b>ទីតាំងតារាងបាល់ទះ</b> —\n\n"
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
