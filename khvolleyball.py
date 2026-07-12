@@ -78,7 +78,7 @@ async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "🔥 <b>ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!</b> 🥤\n\n" \
           "🏐 ឥឡូវនេះប្រព័ន្ធកំពុងបើកស្វាគមន៍រកអ្នកចង់ធ្វើការប្រកួតល្ងាចនេះបាទ!\n" \
           "🔥 ល្ងាចនេះមានអ្នកចង់ផឹកទឹកអំពៅទេបាទ?\n\n" \
-          "👉 តោះ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា <code>/join</code> ដើម្បីចុះឈ្មោះចូលរួមប្រគួត! "<b>របៀបបញ្ជា៖ វាយ /join [ឈ្មោះ]​ Ex. /join Nishida" \n
+          "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា <code>/join</code> ដើម្បីចុះឈ្មោះចូលរួមប្រគួត! របៀបបញ្ជា៖ វាយ /join [ឈ្មោះ]​ Ex. /join Nishida"
     await update.message.reply_text(msg, parse_mode="HTML")
 
 async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
