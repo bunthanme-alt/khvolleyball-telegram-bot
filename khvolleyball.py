@@ -34,35 +34,41 @@ waiting_list = []  # បញ្ជីកីឡាករបម្រុង (Waitin
 current_teams = {"team_a": [], "team_b": []}
 player_stats = {}
 match_score = {"a": 0, "b": 0}
-previous_match_score = None  # សម្រាប់មុខងារ Undo 🌟
+
+# ប្រព័ន្ធ Backup ទាំងពិន្ទុ និងស្ថិតិបុគ្គល ដើម្បីមុខងារ Undo ដើរបានត្រឹមត្រូវបំផុត
+previous_match_score = None  
+previous_player_stats = None  
 
 courts_database = {
-    "1": {"name": "តារាងបាល់ទះ (សាំហាន់)", "link": "មិនទាន់មាន"},
+    "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "មិនទាន់មាន"},
     "2": {"name": "តារាងបាល់ទះ (សែនសុខ)", "link": "https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic"},
     "3": {"name": "តារាងបាល់ទះ (ពូ PM-ប្រគួតដោយសុវត្ថិភាព/កុំបារម្មណ៍)", "link": "មិនទាន់មាន"}
 }
 
+# លុបពាក្យ check-in ដែលជាប់គាំងខុសចេញពីអត្ថបទ និងរៀបតាមលំដាប់លំដោយស្អាត
 times_database = {
     "1": "៥:៣០ ល្ងាច ដល់ ៧:០០ យប់",
     "2": "៥:៣០ ល្ងាច ដល់ ៧:៣០ យប់",
-    "3": "៦:check-in ៣០ យប់ ដល់ ៨:៣០ យប់",
-    "4": "៦:check-in ៣០ យប់ ដល់ ៨:០០ យប់",
-    "5": "៦:check-in ៣០ យប់ ដល់ ៨:៣០ យប់",
-    "6": "៦:០០ ល្ងាច ដល់ ៧:៣០ យប់",
+    "3": "៦:០០ ល្ងាច ដល់ ៧:៣០ យប់",
+    "4": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
+    "5": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
     
-    "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
-    "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១១:០០ ព្រឹក (លេង ២ម៉ោង)",
-    "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:៣០ ព្រឹក ដល់ ១១:៣០ ព្រឹក (លេង ២ម៉ោង)",
-    "10": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ១០:check-in ៣០ ព្រឹក ដល់ ១២:០០ ថ្ងៃត្រង់ (លេង ១ម៉ោងកន្លះ)",
+    "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
+    "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១១:០០ ព្រឹក (លេង ២ម៉ោង)",
+    "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:៣០ ព្រឹក ដល់ ១១:៣០ ព្រឹក (លេង ២ម៉ោង)",
+    "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ១០:៣០ ព្រឹក ដល់ ១២:០០ ថ្ងៃត្រង់ (លេង ១ម៉ោងកន្លះ)",
     
-    "11": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:០០ រសៀល ដល់ ៣:០០ រសៀល (លេង ២ម៉ោង)",
-    "12": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:៣០ រសៀល ដល់ ៣:៣០ រសៀល (លេង ២ម៉ោង)",
-    "13": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ៣:០០ រសៀល ដល់ ៤:៣០ ល្ងាច (លេង ១ម៉ោងកន្លះ)",
-    "14": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ៣:០០ រសៀល ដល់ ៥:០០ លេង ២ម៉ោង"
+    "10": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:០០ រសៀល ដល់ ៣:០០ រសៀល (លេង ២ម៉ោង)",
+    "11": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:៣០ រសៀល ដល់ ៣:៣០ រសៀល (លេង ២ម៉ោង)",
+    "12": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ៣:០០ រសៀល ដល់ ៤:៣០ ល្ងាច (លេង ១ម៉ោងកន្លះ)",
+    "13": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ៣:០០ រសៀល ដល់ ៥:០០ លេង ២ម៉ោង"
 }
 
-selected_court_key = "1"
+selected_court_key = None
 selected_time_key = "1"
+
+def has_khmer(text):
+    return any('\u1780' <= char <= '\u17ff' for char in text)
 
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "🔥 *ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!* 🥤\n\n"
@@ -105,13 +111,20 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     matched_name = name
     search_name = name.lower().strip()
-    for p_name in players_data.keys():
-        if len(search_name) >= 3 and p_name.lower().startswith(search_name):
-            matched_name = p_name
-            break
-        elif p_name.lower() == search_name:
-            matched_name = p_name
-            break
+    
+    if has_khmer(name):
+        for p_name in players_data.keys():
+            if p_name.strip() == name.strip():
+                matched_name = p_name
+                break
+    else:
+        for p_name in players_data.keys():
+            if len(search_name) >= 3 and p_name.lower().startswith(search_name):
+                matched_name = p_name
+                break
+            elif p_name.lower() == search_name:
+                matched_name = p_name
+                break
         
     if matched_name in today_players or matched_name in waiting_list:
         await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ។")
@@ -136,13 +149,20 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     search_name = name.lower().strip()
     
     all_active = today_players + waiting_list
-    for p_name in all_active:
-        if len(search_name) >= 3 and p_name.lower().startswith(search_name):
-            matched_name = p_name
-            break
-        elif p_name.lower() == search_name:
-            matched_name = p_name
-            break
+    
+    if has_khmer(name):
+        for p_name in all_active:
+            if p_name.strip() == name.strip():
+                matched_name = p_name
+                break
+    else:
+        for p_name in all_active:
+            if len(search_name) >= 3 and p_name.lower().startswith(search_name):
+                matched_name = p_name
+                break
+            elif p_name.lower() == search_name:
+                matched_name = p_name
+                break
         
     if matched_name in waiting_list:
         waiting_list.remove(matched_name)
@@ -174,16 +194,19 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg)
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global today_players, waiting_list, current_teams, match_score, previous_match_score
-    today_players = []; waiting_list = []; previous_match_score = None
+    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key
+    today_players = []; waiting_list = []; previous_match_score = None; previous_player_stats = None
     current_teams = {"team_a": [], "team_b": []}; match_score = {"a": 0, "b": 0}
+    selected_court_key = None
     await update.message.reply_text(f"♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global match_score, previous_match_score, player_stats
+    global match_score, previous_match_score, previous_player_stats, player_stats, selected_court_key
     match_score = {"a": 0, "b": 0}
     previous_match_score = None
+    previous_player_stats = None
     player_stats = {}
+    selected_court_key = None
     
     for p in today_players:
         player_stats[p] = {"win": 0, "loss": 0}
@@ -296,9 +319,8 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
-# 🌟 កែសម្រួលមុខងារ /setscore ឱ្យបង្ហាញប្រកាសលទ្ធផលក្រុមឈ្នះចាញ់ច្បាស់លាស់ 🌟
 async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global player_stats, match_score, previous_match_score
+    global player_stats, match_score, previous_match_score, previous_player_stats
     args = context.args
     if len(args) < 2 or not args[0].isdigit() or not args[1].isdigit():
         await update.message.reply_text("❌ របៀបប្រើ៖ វាយ `/setscore [សិតឈ្នះ_A] [សិតឈ្នះ_B]`\n👉 ឧទាហរណ៍៖ `/setscore 2 1`")
@@ -311,6 +333,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sets_b = int(args[1])
     
     previous_match_score = dict(match_score)
+    previous_player_stats = {k: dict(v) for k, v in player_stats.items()}
     
     match_score["a"] = sets_a
     match_score["b"] = sets_b
@@ -331,7 +354,6 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     total_sets = sets_a + sets_b
     
-    # គណនាបង្កើតសារប្រកាសក្រុមឈ្នះដោយស្វ័យប្រវត្តតាមពិន្ទុបងចង់បាន 🌟
     if sets_a > sets_b:
         result_msg = f"🎉 លទ្ធផលថ្ងៃនេះ៖ ក្រុម A ឈ្នះក្រុម B ដោយពិន្ទុ {sets_a}-{sets_b}"
     elif sets_b > sets_a:
@@ -342,27 +364,16 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ [ប្រព័ន្ធបានកត់ត្រារួចរាល់] លេងបានសរុប៖ {total_sets} សិត\n\n{result_msg}\n\n💡 បើបងវាយច្រឡំលេខ អាចវាយ `/undo` ដើម្បីដកពិន្ទុនេះចេញវិញបានភ្លាមៗបាទ!")
 
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global match_score, previous_match_score, player_stats
-    if previous_match_score is None:
+    global match_score, previous_match_score, player_stats, previous_player_stats
+    if previous_match_score is None or previous_player_stats is None:
         await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
         return
         
     match_score = dict(previous_match_score)
-    previous_match_score = None
+    player_stats = {k: dict(v) for k, v in previous_player_stats.items()}
     
-    for p in current_teams["team_a"]:
-        matched = p
-        for name in players_data.keys():
-            if name.lower() == p.lower(): matched = name; break
-        if matched_name := matched:
-            player_stats[matched_name] = {"win": match_score["a"], "loss": match_score["b"]}
-            
-    for p in current_teams["team_b"]:
-        matched = p
-        for name in players_data.keys():
-            if name.lower() == p.lower(): matched = name; break
-        if matched_name := matched:
-            player_stats[matched_name] = {"win": match_score["b"], "loss": match_score["a"]}
+    previous_match_score = None
+    previous_player_stats = None
             
     await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
@@ -377,7 +388,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n"
     msg += f"🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n"
-    msg += "———————————————————————\n"
+    msg += "————————————————橫———————\n"
     
     sorted_stats = sorted(active_stats.items(), key=lambda x: x[1]["win"], reverse=True)
     for name, stat in sorted_stats: 
@@ -403,13 +414,12 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             report = msg_header + f"🤝 លទ្ធផលប្រកួត៖ ស្មើគ្នា ({match_score['a']}-{match_score['b']}) ជានិយាម Fair Play\n"
             report += f"💵 សមាជិកគ្រប់គ្នា (Toggle A និង B) ចេញស្មើគ្នា៖ {equal_share:,.0f} រៀល/ម្នាក់ បាទបង।"
         else:
-            losing_team_size = len(team_b) if match_score["a"] > match_score["b"] else len(team_a)
-            loser_addon_per_person = total_drinks_fee / losing_team_size
-            
             report = msg_header
             if match_score["a"] > match_score["b"]:
+                loser_addon_per_person = total_drinks_fee / len(team_b)
                 report += f"💵 ក្រុម A (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល\n🍹 ក្រុម B (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល\n"
             else:
+                loser_addon_per_person = total_drinks_fee / len(team_a)
                 report += f"🍹 ក្រុម A (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល\n💵 ក្រុម B (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល\n"
         await update.message.reply_text(report)
     except ValueError: await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
@@ -438,18 +448,25 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_time_key = args[0]
     await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងប្រគួតទៅកាន់ជម្រើសទី {selected_time_key} ជោគជ័យ!")
 
+# 🌟 កែសម្រួលមុខងារ /info ឱ្យលាក់/បង្ហាញម៉ោង ផ្អែកលើស្ថានភាពកក់តារាងលេងពិតប្រាកដ 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    play_time_info = times_database[selected_time_key]
     info_msg = " - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច - \n\n🏆 ការប្រគួត៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
-    info_msg += f"⏰ ម៉ោងប្រគួតបច្ចុប្បន្ន៖ {play_time_info}\n"
-    info_msg += "-----------------------\n\n"
     
+    # IMPROVED Logic៖ លក្ខខណ្ឌបង្ហាញម៉ោងប្រកួត លុះត្រាតែមានការកក់តារាងរួចរាល់បាទ 🌟
+    if selected_court_key is not None:
+        play_time_info = times_database[selected_time_key]
+        info_msg += f"⏰ ម៉ោងប្រគួតបច្ចុប្បន្ន៖ {play_time_info}\n"
+        
+    info_msg += "-----------------------\n\n"
     info_msg += "🗓️🏟️ — បញ្ជីទីតាំងតារាងបាល់ទះ —\n\n"
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
-        status_emoji = "✅ [កក់តារាងរួចរាល់]" if key == selected_court_key else "🟡 [មិនទាន់កក់តារាង]"
+        if selected_court_key is not None and key == selected_court_key:
+            status_emoji = "✅ [កក់តារាងរួចរាល់]"
+        else:
+            status_emoji = "🟡 [មិនទាន់កក់តារាង]"
         
-        if key == selected_court_key: 
+        if selected_court_key is not None and key == selected_court_key: 
             info_msg += f"📍 [ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
         else: 
             info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
