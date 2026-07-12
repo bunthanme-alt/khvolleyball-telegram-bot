@@ -45,7 +45,6 @@ courts_database = {
     "3": {"name": "តារាងបាល់ទះ (ពូ PM-ប្រគួតដោយសុវត្ថិភាព/កុំបារម្មណ៍)", "link": "មិនទាន់មាន"}
 }
 
-# លុបពាក្យ check-in ដែលជាប់គាំងខុសចេញពីអត្ថបទ និងរៀបតាមលំដាប់លំដោយស្អាត
 times_database = {
     "1": "៥:៣០ ល្ងាច ដល់ ៧:០០ យប់",
     "2": "៥:៣០ ល្ងាច ដល់ ៧:៣០ យប់",
@@ -258,7 +257,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 elif count_left_b < count_left_a and len(team_b) < size_b:
                     team_b.append(p)
                 else:
-                    if weight_a <= weight_b and len(team_a) < size_a: team_a.append(p)
+                    if weight_a <= weight_b && len(team_a) < size_a: team_a.append(p)
                     elif len(team_b) < size_b: team_b.append(p)
                     else:
                         if len(team_a) < size_a: team_a.append(p)
@@ -317,7 +316,7 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg += "———— Vs ————\n"
         msg += f"🔸 *ក្រុម B:* {', '.join(team_b)}"
         await update.message.reply_text(msg, parse_mode="Markdown")
-    except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
+    except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ biographies")
 
 async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score, previous_match_score, previous_player_stats
@@ -388,7 +387,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n"
     msg += f"🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n"
-    msg += "————————————————橫———————\n"
+    msg += "———————————————————————\n"
     
     sorted_stats = sorted(active_stats.items(), key=lambda x: x[1]["win"], reverse=True)
     for name, stat in sorted_stats: 
@@ -438,21 +437,24 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     court_name = courts_database[selected_court_key]['name']
     court_link = courts_database[selected_court_key]['link']
     
-    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ [កក់តារាងរួចរាល់]\n🔗 លីង Map៖ {court_link}")
+    # បង្ហាញអត្ថបទពណ៌ខៀវតាមការណែនាំ 🌟
+    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ [កក់តារាងរួចរាល់](https://t.me/)\n🔗 លីង Map៖ {court_link}", parse_mode="Markdown")
 
+# 🌟 ទី១៖ កែកន្លែង /settime ឱ្យបង្ហាញអត្ថបទម៉ោងដែលបានជ្រើសរើសពិតប្រាកដ 🌟
 async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_time_key
     args = context.args
     if not args or args[0] not in times_database:
         await update.message.reply_text("❌ របៀបប្រើ៖ វាយ `/settime [លេខកូដ]` ដើម្បីជ្រើសរើសម៉ោងប្រគួត៖\n\n"); return
     selected_time_key = args[0]
-    await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងប្រគួតទៅកាន់ជម្រើសទី {selected_time_key} ជោគជ័យ!")
+    
+    chosen_time_text = times_database[selected_time_key]
+    await update.message.reply_text(f"⏰ បានផ្លាស់ប្តូរម៉ោងប្រគួតទៅកាន់៖ {chosen_time_text} ជោគជ័យ!")
 
-# 🌟 កែសម្រួលមុខងារ /info ឱ្យលាក់/បង្ហាញម៉ោង ផ្អែកលើស្ថានភាពកក់តារាងលេងពិតប្រាកដ 🌟
+# 🌟 ទី២៖ កែកន្លែង info ត្រង់ចំណុច [កក់តារាងរួចរាល់] ឱ្យបង្ហាញអក្សរពណ៌ខៀវ 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_msg = " - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច - \n\n🏆 ការប្រគួត៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     
-    # IMPROVED Logic៖ លក្ខខណ្ឌបង្ហាញម៉ោងប្រកួត លុះត្រាតែមានការកក់តារាងរួចរាល់បាទ 🌟
     if selected_court_key is not None:
         play_time_info = times_database[selected_time_key]
         info_msg += f"⏰ ម៉ោងប្រគួតបច្ចុប្បន្ន៖ {play_time_info}\n"
@@ -462,7 +464,8 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
-            status_emoji = "✅ [កក់តារាងរួចរាល់]"
+            # ប្រើប្រាស់ Markdown Link បន្លំទៅលីង Telegram ដើម្បីឱ្យអក្សរឡើងពណ៌ខៀវ 🔵
+            status_emoji = "✅ [កក់តារាងរួចរាល់](https://t.me/)"
         else:
             status_emoji = "🟡 [មិនទាន់កក់តារាង]"
         
@@ -475,7 +478,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             info_msg += "-----------------------\n"
             
     info_msg += "\n💡 លក្ខខណ្ឌ៖ ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ/ទឹកអំពៅ/ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
-    await update.message.reply_text(info_msg)
+    await update.message.reply_text(info_msg, parse_mode="Markdown")
 
 def main() -> None:
     token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
