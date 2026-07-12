@@ -143,7 +143,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។ (កីឡាករផ្លូវការ៖ {len(today_players)}/12 នាក់)")
     else:
         waiting_list.append(matched_name)
-        await update.message.reply_text(f"⏳ តារាងពេញ ១២ នាក់ហើយ! បានបញ្ចូលឈ្មោះ [{matched_name}] ទៅក្នុងបញ្ជីកីឡាករកម្រុង (Waiting List ជួរទី {len(waiting_list)})")
+        await update.message.reply_text(f"⏳ តារាងពេញ ១២ នាក់ហើយ! បានបញ្ចូលឈ្មោះ [{matched_name}] ទៅក្នុងបញ្ជីកីឡាករបម្រុង (Waiting List ជួរទី {len(waiting_list)})")
 
 async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list
@@ -288,7 +288,6 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     format_a = [format_player_name(p) for p in team_a]
     format_b = [format_player_name(p) for p in team_b]
         
-    # 🛠️ FIXED: ប្ដូរមកប្រើប្រាស់ Triple Quotes ការពារកំហុសដាច់អក្សរជាដាច់ខាត 🌟
     msg = f"""🏐 - លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) - 🏐
 
 🔹 *ក្រុម A:* {', '.join(format_a)}
@@ -324,7 +323,6 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
-# 🛠️ FIXED: ប្ដូរមកប្រើប្រាស់ Triple Quotes ការពារកំហុសដាច់អក្សរជាដាច់ខាត 🌟
 async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score, previous_match_score, previous_player_stats
     args = context.args
@@ -397,9 +395,17 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     total_sets_played = match_score["a"] + match_score["b"]
         
-    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n———————————————————————\n"
+    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n-----------------------------------\n"
     
     sorted_stats = sorted(active_stats.items(), key=lambda x: x[1]["win"], reverse=True)
     for name, stat in sorted_stats: 
         msg += f"👤 {name} 🏆 ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
     await update.message.reply_text(msg)
+
+async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not current_teams["team_a"]:
+        await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
+        return
+    args = context.args
+    if len(args) < 2:
+        await update.message.reply_text("❌ របៀបប្រើ៖ /calculate
