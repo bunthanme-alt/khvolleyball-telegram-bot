@@ -477,7 +477,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if selected_court_key is not None and key == selected_court_key:
             status_emoji = "<a href='https://t.me/'>[កក់តារាងរួចរាល់]</a>"
         else:
-            status_emoji = "🟡 [មិនទាន់កក់តារាង]\n"
+            status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
         if selected_court_key is not None and key == selected_court_key: 
             info_msg += f"📍 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
