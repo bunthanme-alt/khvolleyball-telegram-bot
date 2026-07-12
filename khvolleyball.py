@@ -51,11 +51,11 @@ courts_database = {
 }
 
 times_database = {
-    "1": "៥:៣០ ល្ងាច ដល់ ៧:០០ យប់",
+    "1": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
     "2": "៥:៣០ ល្ងាច ដល់ ៧:៣០ យប់",
     "3": "៦:០០ ល្ងាច ដល់ ៧:៣០ យប់",
     "4": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
-    "5": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
+    "5": "៥:៣០ យប់ ដល់ ៧:០០ យប់",
     
     "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
     "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:០០ ព្រឹក (លេង ២ម៉ោង)",
@@ -77,7 +77,7 @@ def has_khmer(text):
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "🔥 <b>ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!</b> 🥤\n\n" \
           "🏐 ឥឡូវនេះប្រព័ន្ធកំពុងបើកស្វាគមន៍រកអ្នកចង់ធ្វើការប្រកួតល្ងាចនេះបាទ!\n" \
-          "🔥 បញ្ជាក់៖ ល្ងាចនេះមានអ្នកចង់ផឹកទឹកអំពៅទេបាទ?!\n\n" \
+          "🔥 ល្ងាចនេះមានអ្នកចង់ផឹកទឹកអំពៅទេបាទ?\n\n" \
           "👉 តោះ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា <code>/join</code> ដើម្បីចុះឈ្មោះវត្តមានចូលរួមវិនិយោគប្រកួតដើម្បីសុខភាពនិងដណ្តើមជ័យជំនះទាំងអស់គ្នាឱ្យបានលឿនៗ! របៀបបញ្ជា៖ វាយ /join [ឈ្មោះ]​ Ex. /join Nishida"
     await update.message.reply_text(msg, parse_mode="HTML")
 
@@ -461,7 +461,7 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_time_key = args[0]
     
     chosen_time_text = times_database[selected_time_key]
-    await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោងដោយ៖ {chosen_time_text} ជោគជ័យ!")
+    await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
 # 🛠️ FIXED: ប្ដូរប្រព័ន្ធផ្ញើសាររួមទាំងប៊ូតុងពណ៌ខៀវមកជា parse_mode="HTML" រឹងមាំ ១០០% 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -487,7 +487,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if i < total_courts:
             info_msg += "-----------------------\n"
             
-    info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ/ទឹកអំពៅ/ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
+    info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
 def main() -> None:
