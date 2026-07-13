@@ -76,7 +76,7 @@ selected_time_key = "1"
 def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
 
-# 🕒 ៣. SYSTEM Auto-Reset (Cron Job ផ្ទៃក្នុងរៀងរាល់ម៉ោង 00:00 យប់) 🌟
+# 🕒 ៣. SYSTEM Auto-Reset (Cron Job ផ្ទៃក្នុងរៀងរាល់ម៉ោង 00:00 យប់)
 def run_midnight_cronjob():
     global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key
     while True:
@@ -484,40 +484,46 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🛠️ FIXED: បន្ថែម Tag <code> គ្របពីដើមដល់ចប់ ដើម្បីបង្ខំឱ្យ Telegram បង្ហាញជា Font Monospace ស្មើគ្នាបេះបិទរៀបរយ ១០០% 🌟
+# 🛠️ FIXED: បំបែក Tag <code> ចេញពីលីងទាំងអស់ ដើម្បីអនុញ្ញាតឱ្យលីង និងប៊ូតុងពណ៌ខៀវអាចចុចបាន ១០០% 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # បើកការបង្ហាញបែប Monospace ដ៏មានរបៀបរៀបរយ (Very Clear, Clean & Neat) 🌟
-    info_msg = "<code>" \
-               "   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n" \
-               "🏆 ការប្រគួត៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
+    # ចំណងជើងធំតម្រឹមជួរកណ្ដាល Monospace
+    info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>"
     
+    # ព័ត៌មានរួម
+    info_msg += "🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     if selected_court_key is not None:
         play_time_info = times_database[selected_time_key]
-        info_msg += f"⏰ ម៉ោងប្រគួតបច្ចុប្បន្ន៖ {play_time_info}\n"
+        info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    info_msg += "-------------------------------------\n\n" \
-               "      📍 ទីតាំងតារាងបាល់ទះ      \n\n"
+    # របារខណ្ឌ និងចំណងជើងរងតម្រឹមជួរកណ្ដាល Monospace
+    info_msg += "<code>-------------------------------------\n" \
+                "      📍 ទីតាំងតារាងបាល់ទះ      \n\n</code>"
                
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
-            status_emoji = "[✅ កក់តារាងរួចរាល់]"
+            status_emoji = "<a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>"
         else:
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
+        # ដកលីង Map និងប៊ូតុងចុះឈ្មោះចេញពី Tag <code> ដើម្បីឱ្យ Click បានភ្លាមៗ 🌟
         if selected_court_key is not None and key == selected_court_key: 
-            info_msg += f"🔹 [ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖ {court['name']} "
-            # បិទ Tag <code> ជាបណ្ដោះអាសន្ន ដើម្បីផ្ដល់សិទ្ធិឱ្យ HTML Hyperlink បង្ហាញជាអក្សរពណ៌ខៀវឆ្លុះស្អាត
-            info_msg += f"</code><a href='https://t.me/'>{status_emoji}</a><code>\n🔗 លីង Map៖ {court['link']}\n"
+            info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n"
+            if court['link'] != "មិនទាន់មាន":
+                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>{court['name']}</a>\n"
+            else:
+                info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
         else: 
-            info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
+            info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n"
+            if court['link'] != "មិនទាន់មាន":
+                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>{court['name']}</a>\n"
+            else:
+                info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
         
         if i < total_courts:
-            info_msg += "-------------------------------------\n"
+            info_msg += "<code>-------------------------------------\n</code>"
             
-    info_msg += "\n💡 លក្ខខណ្ឌ៖ ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
-    # បិទបញ្ចប់ Tag <code> វិញឱ្យបានត្រឹមត្រូវ
-    info_msg += "</code>"
+    info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
     
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
