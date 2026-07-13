@@ -76,7 +76,7 @@ selected_time_key = "1"
 def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
 
-# 🕒 ៣. SYSTEM CRON JOB: មុខងារសម្អាតទិន្នន័យស្វ័យប្រវត្តជារៀងរាល់ពាក់កណ្ដាលអាធ្រាត្រ (00:00 AM) 🌟
+# 🕒 ៣. SYSTEM Auto-Reset (Cron Job ផ្ទៃក្នុងរៀងរាល់ម៉ោង 00:00 យប់) 🌟
 def run_midnight_cronjob():
     global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key
     while True:
@@ -84,7 +84,6 @@ def run_midnight_cronjob():
         tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min)
         seconds_until_midnight = (tomorrow - now).total_seconds()
         
-        # ឱ្យប្រព័ន្ធកូដគេងរង់ចាំរហូតដល់ម៉ោង 12 យប់ស្ងាត់ៗ
         time.sleep(seconds_until_midnight)
         
         today_players = []
@@ -485,31 +484,41 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🛠️ FIXED & IMPROVED: រៀបចំទម្រង់អក្សរ និងខ្សែបន្ទាត់ឱ្យរត់ចំកណ្ដាលបែប Clean UI & Very Cool 🌟
+# 🛠️ FIXED: បន្ថែម Tag <code> គ្របពីដើមដល់ចប់ ដើម្បីបង្ខំឱ្យ Telegram បង្ហាញជា Font Monospace ស្មើគ្នាបេះបិទរៀបរយ ១០០% 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   </code>\n\n🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
+    # បើកការបង្ហាញបែប Monospace ដ៏មានរបៀបរៀបរយ (Very Clear, Clean & Neat) 🌟
+    info_msg = "<code>" \
+               "   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n" \
+               "🏆 ការប្រគួត៖ បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     
     if selected_court_key is not None:
         play_time_info = times_database[selected_time_key]
-        info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
+        info_msg += f"⏰ ម៉ោងប្រគួតបច្ចុប្បន្ន៖ {play_time_info}\n"
         
-    info_msg += "<code>-------------------------------------</code>\n\n<code>      📍 <b>ទីតាំងតារាងបាល់ទះ</b>      </code>\n\n"
+    info_msg += "-------------------------------------\n\n" \
+               "      📍 ទីតាំងតារាងបាល់ទះ      \n\n"
+               
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
-            status_emoji = "<a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>"
+            status_emoji = "[✅ កក់តារាងរួចរាល់]"
         else:
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
         if selected_court_key is not None and key == selected_court_key: 
-            info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
+            info_msg += f"🔹 [ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖ {court['name']} "
+            # បិទ Tag <code> ជាបណ្ដោះអាសន្ន ដើម្បីផ្ដល់សិទ្ធិឱ្យ HTML Hyperlink បង្ហាញជាអក្សរពណ៌ខៀវឆ្លុះស្អាត
+            info_msg += f"</code><a href='https://t.me/'>{status_emoji}</a><code>\n🔗 លីង Map៖ {court['link']}\n"
         else: 
             info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n🔗 លីង Map៖ {court['link']}\n"
         
         if i < total_courts:
-            info_msg += "<code>-------------------------------------</code>\n"
+            info_msg += "-------------------------------------\n"
             
-    info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
+    info_msg += "\n💡 លក្ខខណ្ឌ៖ ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
+    # បិទបញ្ចប់ Tag <code> វិញឱ្យបានត្រឹមត្រូវ
+    info_msg += "</code>"
+    
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
 def main() -> None:
@@ -518,7 +527,7 @@ def main() -> None:
     # 🚀 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធបន្លំ Server បោក Render
     threading.Thread(target=start_fake_server, daemon=True).start()
     
-    # 🕒 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធ Background CRON JOB (សម្អាតទិន្នន័យពាក់កណ្ដាលអាធ្រាត្រ) 🌟
+    # 🕒 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធ Background CRON JOB (សម្អាតទិន្នន័យពាក់កណ្ដាលអាធ្រាត្រ)
     threading.Thread(target=run_midnight_cronjob, daemon=True).start()
     
     app = ApplicationBuilder().token(token).build()
