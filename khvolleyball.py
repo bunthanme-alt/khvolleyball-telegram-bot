@@ -2,6 +2,8 @@ import random
 import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
+import datetime
+import time
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
@@ -73,6 +75,26 @@ selected_time_key = "1"
 
 def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
+
+# 🕒 ៣. SYSTEM CRON JOB: មុខងារសម្អាតទិន្នន័យស្វ័យប្រវត្តជារៀងរាល់ពាក់កណ្ដាលអាធ្រាត្រ (00:00 AM) 🌟
+def run_midnight_cronjob():
+    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key
+    while True:
+        now = datetime.datetime.now()
+        tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min)
+        seconds_until_midnight = (tomorrow - now).total_seconds()
+        
+        # ឱ្យប្រព័ន្ធកូដគេងរង់ចាំរហូតដល់ម៉ោង 12 យប់ស្ងាត់ៗ
+        time.sleep(seconds_until_midnight)
+        
+        today_players = []
+        waiting_list = []
+        previous_match_score = None
+        previous_player_stats = None
+        current_teams = {"team_a": [], "team_b": []}
+        match_score = {"a": 0, "b": 0}
+        selected_court_key = None
+        print("🕒 [CRON JOB] Midnight system auto-reset executed successfully!")
 
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "🔥 <b>ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!</b> 🥤\n\n" \
@@ -451,7 +473,7 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     court_name = courts_database[selected_court_key]['name']
     court_link = courts_database[selected_court_key]['link']
     
-    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ {court_link}", parse_mode="HTML")
+    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ {court_link}", parse_mode="HTML")
 
 async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_time_key
@@ -463,7 +485,7 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🛠️ IMPROVED: កែសម្រួលមុខងារ /info ឱ្យរៀបចំតម្រឹមជួរចំកណ្ដាល និងប្ដូរ Icon ✅ រួចរាល់ ១០០% 🌟
+# 🛠️ FIXED & IMPROVED: រៀបចំទម្រង់អក្សរ និងខ្សែបន្ទាត់ឱ្យរត់ចំកណ្ដាលបែប Clean UI & Very Cool 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   </code>\n\n🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     
@@ -475,7 +497,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
-            status_emoji = "<a href='https://t.me/'>[ កក់តារាងរួចរាល់]</a>"
+            status_emoji = "<a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>"
         else:
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
@@ -493,7 +515,11 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main() -> None:
     token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
     
+    # 🚀 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធបន្លំ Server បោក Render
     threading.Thread(target=start_fake_server, daemon=True).start()
+    
+    # 🕒 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធ Background CRON JOB (សម្អាតទិន្នន័យពាក់កណ្ដាលអាធ្រាត្រ) 🌟
+    threading.Thread(target=run_midnight_cronjob, daemon=True).start()
     
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("join", join_command))
