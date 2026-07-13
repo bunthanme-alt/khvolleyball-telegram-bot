@@ -389,7 +389,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ biographies")
+        await update.message.reply_text("❌ មិនទាន់មានទិន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ biographies")
         return
         
     match_score = dict(previous_match_score)
@@ -472,7 +472,13 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     court_name = courts_database[selected_court_key]['name']
     court_link = courts_database[selected_court_key]['link']
     
-    await update.message.reply_text(f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ {court_link}", parse_mode="HTML")
+    # ត្រួតពិនិត្យបើមិនទាន់មានលីង គឺមិនឱ្យចេញ Tag <a> ការពារការគាំង
+    if court_link != "មិនទាន់មាន":
+        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ <a href='{court_link}'>{court_name}</a>"
+    else:
+        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ <code>មិនទាន់មាន</code>"
+        
+    await update.message.reply_text(status_msg, parse_mode="HTML")
 
 async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_time_key
@@ -484,20 +490,18 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🛠️ FIXED: បំបែក Tag <code> ចេញពីលីងទាំងអស់ ដើម្បីអនុញ្ញាតឱ្យលីង និងប៊ូតុងពណ៌ខៀវអាចចុចបាន ១០០% 🌟
+# 🛠️ IMPROVED UPGRADE: រៀបចំទម្រង់ UI និងប្លុកលក្ខខណ្ឌ If-Else ការពារលីងទទេរស្អាតឥតខ្ចោះ 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # ចំណងជើងធំតម្រឹមជួរកណ្ដាល Monospace
-    info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>"
+    # បន្ថែម Emoji នៅសងខាងចំណងជើង និងខ្សែបន្ទាត់ដើម្បីឱ្យរត់ចំកណ្ដាលស្អាត (Clean Monospace UI)
+    info_msg = "<code>🏐 - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច - 🏐\n\n</code>" \
+               f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     
-    # ព័ត៌មានរួម
-    info_msg += "🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     if selected_court_key is not None:
         play_time_info = times_database[selected_time_key]
         info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    # របារខណ្ឌ និងចំណងជើងរងតម្រឹមជួរកណ្ដាល Monospace
     info_msg += "<code>-------------------------------------\n" \
-                "      📍 ទីតាំងតារាងបាល់ទះ      \n\n</code>"
+                "      🏟️  ទីតាំងតារាងបាល់ទះ  🏟️      \n\n</code>"
                
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
@@ -506,17 +510,17 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
-        # ដកលីង Map និងប៊ូតុងចុះឈ្មោះចេញពី Tag <code> ដើម្បីឱ្យ Click បានភ្លាមៗ 🌟
+        # លក្ខខណ្ឌកែលម្អ (Improvement)៖ ត្រួតពិនិត្យមើលលីង Map ការពារការចុចលើលីងទទេរ
         if selected_court_key is not None and key == selected_court_key: 
             info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n"
             if court['link'] != "មិនទាន់មាន":
-                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>{court['name']}</a>\n"
+                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
             else:
                 info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
         else: 
             info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n"
             if court['link'] != "មិនទាន់មាន":
-                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>{court['name']}</a>\n"
+                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
             else:
                 info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
         
