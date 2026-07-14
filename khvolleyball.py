@@ -26,16 +26,36 @@ def start_fake_server():
     print(f"Fake Server running on port {port}...")
     server.serve_forever()
 
-# ២. ទិន្នន័យ និងមុខងារដើមទាំងអស់ ១០០% 
+# ២. DATABASE កីឡាករផ្លូវការ និងកម្រិតវាស់វែងសមត្ថភាព ១០០% 🌟
 players_data = {
-    "BOY": "setter", "Yeun": "setter", 
-    "Bunthan(Sky)": 2, "Samay": 3, "Sila": 2, 
-    "Sal": 1, "Borey": 2, "Lxy": 2, "Phirom": 2, 
-    "Thona": 2, "Phatdon": 3, "Lyhour": 2, "Thinhhhh(Wick)": 3, "Salit": 2, "Ngonn": 2,
-    "Khai": 1, "មិនា": 1, "chaomey": 2
+    "Yeun": "setter",
+    "BOY": "setter",
+    "VI SAL": "setter",
+    "Thorn Samay": 3,
+    "Phirom YEM": 3,
+    "Phatdon": 3,
+    "Thinhhhh (Wick)": 3,
+    "Sila Soem": 2,
+    "mean chaomey": 2,
+    "Suyngorn": 2,
+    "៤៣.ចេន រដ្ឋនី គ២": 2,
+    "Kong Channborey (គង់ ច័ន្ទបុរី)": 2,
+    "Mang Thona": 2,
+    "Lxy": 2,
+    "Aok Lyhour": 2,
+    "𝐌𝐫-𝐖𝐚𝐧🇰🇭": 2,
+    "Khorn Salit": 2,
+    "ផល មិនា🇰🇭": 2,
+    "Em Bunthan": 2,
+    "LAY": 1,
+    "ផល បញ្ញា(Phal Banha)": 1,
+    "Seng Ngonn": 1,
+    "Vanna Poy": 1,
+    "Khai Titi(Libero)": 1
 }
 
-left_spikers_list = ["Bunthan(Sky)", "Lyhour", "Lxy", "Salit"]
+# បញ្ជីកីឡាករស្មាត់ឆ្វេងហ្ស៊ីន
+left_spikers_list = ["Bunthan(Sky)", "Lyhour", "Lxy", "Salit", "Aok Lyhour", "Khorn Salit"]
 today_players = []
 waiting_list = []  # បញ្ជីកីឡាករបម្រុង (Waiting List) 🌟
 current_teams = {"team_a": [], "team_b": []}
@@ -61,7 +81,7 @@ times_database = {
     
     "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
     "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:០០ ព្រឹក (លេង ២ម៉ោង)",
-    "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:៣០ ព្រឹក ដល់ ១១:៣០ ព្រឹក (លេង ២ម៉ោង)",
+    "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:៣០ ព្រឹក ដល់ ១១:៣០ ព្រឹក (លេង ២ម៉ោង)", # 🛠️ FIXED TYPO HERE 🌟
     "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ១០:៣០ ព្រឹក ដល់ ១២:០០ ថ្ងៃត្រង់ (លេង ១ម៉ោងកន្លះ)",
     
     "10": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:០០ រសៀល ដល់ ៣:០០ រសៀល (លេង ២ម៉ោង)",
@@ -132,7 +152,6 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = f"[Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់"
     await update.message.reply_text(msg)
 
-# 🛠️ FIXED: កែសម្រួលមុខងារ /join ឱ្យបង្ហាញសារជោគជ័យគួបផ្សំនឹងបញ្ជីឈ្មោះមានលេខរៀងចុះក្រោមភ្លាមៗ 🌟
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, player_stats
     args = context.args
@@ -162,20 +181,16 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if matched_name not in player_stats: 
         player_stats[matched_name] = {"win": 0, "loss": 0}
 
-    # បង្កើតអត្ថបទសារឆ្លើយតប និងបញ្ជីឈ្មោះកីឡាកររត់លេខរៀងចុះក្រោមស្អាតៗ 🌟
     if len(today_players) < 12:
         today_players.append(matched_name)
         reply_msg = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។\n(កីឡាករផ្លូវការ {len(today_players)}/12)\n"
     else:
         waiting_list.append(matched_name)
-        reply_msg = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។\n(កីឡាករបម្រុង {len(waiting_list)})\n"
+        reply_msg = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ。\n(កីឡាករបម្រុង {len(waiting_list)})\n"
 
-    # បន្ថែមបញ្ជីឈ្មោះកីឡាករផ្លូវការរត់លេខរៀង
-    reply_msg += "\n📋 បញ្ជីកីឡាករផ្លូវការ៖\n"
     for idx, player in enumerate(today_players, start=1):
         reply_msg += f"{idx}. {player}\n"
         
-    # បន្ថែមបញ្ជីឈ្មោះកីឡាករបម្រុង (បើមាន)
     if waiting_list:
         reply_msg += "\n⏳ បញ្ជីកីឡាករបម្រុង៖\n"
         for idx, player in enumerate(waiting_list, start=1):
@@ -442,7 +457,7 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     previous_match_score = None
     previous_player_stats = None
             
-    await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
+    await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not player_stats:
