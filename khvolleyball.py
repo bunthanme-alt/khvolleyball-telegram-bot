@@ -76,7 +76,7 @@ selected_time_key = "1"
 def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
 
-# 🕒 ៣. SYSTEM Auto-Reset (Cron Job ផ្ទៃក្នុងរៀងរាល់ម៉ោង 00:00 យប់)
+# 🕒 ៣. SMART Auto-Reset (Cron Job ផ្ទៃក្នុង៖ ពិនិត្យលក្ខខណ្ឌចាប់គូប្រកួតនៅម៉ោង 00:00 យប់) 🌟
 def run_midnight_cronjob():
     global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
     while True:
@@ -84,17 +84,22 @@ def run_midnight_cronjob():
         tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min)
         seconds_until_midnight = (tomorrow - now).total_seconds()
         
+        # ឱ្យប្រព័ន្ធកូដគេងរង់ចាំរហូតដល់ម៉ោង 12 យប់កណ្តាលអាធ្រាត្រ
         time.sleep(seconds_until_midnight)
         
-        today_players = []
-        waiting_list = []
-        previous_match_score = None
-        previous_player_stats = None
-        current_teams = {"team_a": [], "team_b": []}
-        match_score = {"a": 0, "b": 0}
-        selected_court_key = None
-        player_stats = {}
-        print("🕒 [CRON JOB] Midnight system auto-reset executed successfully!")
+        # លក្ខខណ្ឌកែសម្រួល៖ បើមិនទាន់ចាប់គូប្រកួតទុកទេ ទើបឱ្យវា Auto-Reset 🌟
+        if not current_teams["team_a"] and not current_teams["team_b"]:
+            today_players = []
+            waiting_list = []
+            previous_match_score = None
+            previous_player_stats = None
+            current_teams = {"team_a": [], "team_b": []}
+            match_score = {"a": 0, "b": 0}
+            selected_court_key = None
+            player_stats = {}
+            print("🕒 [CRON JOB] Midnight Auto-Reset executed (No advanced matchmaking found).")
+        else:
+            print("🕒 [CRON JOB] Midnight Auto-Reset skipped (Advanced matchmaking found for tomorrow).")
 
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "🔥 <b>ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!</b> 🥤\n\n" \
@@ -209,9 +214,16 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not today_players:
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
         return
-    msg = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់)\n--------------------------------------------\n" + ", ".join(today_players)
+        
+    msg = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់)\n--------------------------------------------\n"
+    for idx, player in enumerate(today_players, start=1):
+        msg += f"{idx}. {player}\n"
+        
     if waiting_list:
-        msg += f"\n\n⏳ បញ្ជីកីឡាករបម្រុង ({len(waiting_list)} នាក់)៖\n--------------------------------------------\n" + ", ".join(waiting_list)
+        msg += f"\n⏳ បញ្ជីកីឡាករបម្រុង ({len(waiting_list)} នាក់)៖\n--------------------------------------------\n"
+        for idx, player in enumerate(waiting_list, start=1):
+            msg += f"{idx}. {player}\n"
+            
     await update.message.reply_text(msg)
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -316,7 +328,6 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
           f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
     await update.message.reply_text(msg, parse_mode="HTML")
 
-# 🛠️ FIXED BUG: បន្ថែម Logic បញ្ចូលឈ្មោះទៅក្នុង today_players និងរក្សាឈ្មោះផ្លូវការប្រព័ន្ធ 🌟
 async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, player_stats, match_score, today_players
     args = context.args
@@ -332,7 +343,6 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         team_a = []
         team_b = []
         
-        # ស្វែងរក និងប្ដូរឈ្មោះកីឡាករក្រុម A ទៅជាឈ្មោះផ្លូវការនៅក្នុង Database
         for p in raw_team_a:
             matched_name = p
             for official_name in players_data.keys():
@@ -340,13 +350,11 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     matched_name = official_name
                     break
             team_a.append(matched_name)
-            # បញ្ចូលឈ្មោះទៅក្នុងវត្តមានផ្លូវការថ្ងៃនេះជៀសវាង Bug stats មើលមិនឃើញ 🌟
             if matched_name not in today_players:
                 today_players.append(matched_name)
             if matched_name not in player_stats:
                 player_stats[matched_name] = {"win": 0, "loss": 0}
                 
-        # ស្វែងរក និងប្ដូរឈ្មោះកីឡាករក្រុម B ទៅជាឈ្មោះផ្លូវការនៅក្នុង Database
         for p in raw_team_b:
             matched_name = p
             for official_name in players_data.keys():
@@ -354,7 +362,6 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     matched_name = official_name
                     break
             team_b.append(matched_name)
-            # បញ្ចូលឈ្មោះទៅក្នុងវត្តមានផ្លូវការថ្ងៃនេះជៀសវាង Bug stats មើលមិនឃើញ 🌟
             if matched_name not in today_players:
                 today_players.append(matched_name)
             if matched_name not in player_stats:
@@ -424,7 +431,6 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
-# 🛠️ FIXED BUG: ប្ដូរឱ្យចម្រាញ់យកស្ថិតិសមាជិកទាំងអស់ដែលមានទិន្នន័យក្នុង player_stats មកបង្ហាញច្បាស់លាស់ 🌟
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not player_stats:
         await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតសម្រាប់សមាជិកថ្ងៃនេះទេ។")
@@ -434,11 +440,12 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n-----------------------------------\n"
     
-    # បង្ហាញកីឡាករទាំងអស់ដែលមានទិន្នន័យពិន្ទុ មិនថាបានមកពីការ join ឬការវាយបញ្ចូលក្នុង manual ឡើយ 🌟
     sorted_stats = sorted(player_stats.items(), key=lambda x: x[1]["win"], reverse=True)
     for name, stat in sorted_stats: 
         if stat["win"] > 0 or stat["loss"] > 0:
-            msg += f"👤 {name} 🏆 ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
+            trophy = "🏆 " if stat["win"] > stat["loss"] else "👤 "
+            msg += f"{trophy}{name} ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
+            
     await update.message.reply_text(msg)
 
 async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -558,7 +565,7 @@ def main() -> None:
     # 🚀 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធបន្លំ Server បោក Render
     threading.Thread(target=start_fake_server, daemon=True).start()
     
-    # 🕒 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធ Background CRON JOB (សម្អាតទិន្នន័យពាក់កណ្ដាលអាធ្រាត្រ)
+    # 🕒 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធ Background Smart Auto-Reset (ផ្ទៀងផ្ទាត់ការចាប់គូប្រកួត) 🌟
     threading.Thread(target=run_midnight_cronjob, daemon=True).start()
     
     app = ApplicationBuilder().token(token).build()
