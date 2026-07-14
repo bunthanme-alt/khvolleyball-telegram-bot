@@ -119,12 +119,11 @@ def run_midnight_cronjob():
         else:
             print("🕒 [CRON JOB] Midnight Auto-Reset skipped (Advanced matchmaking found for tomorrow).")
 
+# 🛠️ UPDATED: បន្ថែមការណែនាំសម្រាប់ការចុះឈ្មោះឱ្យមិត្តភក្តិ តាមការណែនាំចុងក្រោយបង្អស់បាទបង 🌟
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = "🔥 <b>ចង់បែកញើស ចង់ផឹកទឹកអំពៅ!</b> 🥤\n\n" \
-          "🏐 ឥឡូវនេះប្រព័ន្ធកំពុងបើកស្វាគមន៍រកអ្នកចង់ធ្វើការប្រកួតល្ងាចនេះបាទ!\n" \
-          "🔥 ល្ងាចនេះមានអ្នកចង់ផឹកទឹកអំពៅទេបាទ?\n\n" \
-          "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា <code>/join</code> ដើម្បីចុះឈ្មោះចូលរួមប្រគួត! របៀបបញ្ជា៖ វាយ /join [ឈ្មោះ]​ Ex. /join Nishida"
-    await update.message.reply_text(msg, parse_mode="HTML")
+    msg = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា /join ដើម្បីចុះឈ្មោះចូលរួមប្រគួត! របៀបបញ្ជា៖ វាយ /join\n" \
+          "📌 ប្រសិនបើចុះឈ្មោះអោយមិត្តភ័ក្ក សូមវាយបញ្ជា /join [ឈ្មោះមិត្តភក្តិ]"
+    await update.message.reply_text(msg)
 
 async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, player_stats
@@ -408,7 +407,7 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
               f"🔸 <b>ក្រុម B:</b> {', '.join(team_b)}"
         await update.message.reply_text(msg, parse_mode="HTML")
     except Exception: 
-        await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ।")
+        await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
 async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score, previous_match_score, previous_player_stats
@@ -452,7 +451,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ biographies")
         return
         
     match_score = dict(previous_match_score)
@@ -571,7 +570,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
-        if selected_court_key is not None and key == selected_court_key: 
+        if selected_court_key is not None clicking and key == selected_court_key: 
             info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n"
             if court['link'] != "មិនទាន់មាន":
                 info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
