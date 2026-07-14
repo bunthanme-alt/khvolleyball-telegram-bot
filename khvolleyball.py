@@ -358,6 +358,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
           f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
     await update.message.reply_text(msg, parse_mode="HTML")
 
+# 🛠️ FIXED Logic: លុបការ append ឈ្មោះចូល today_players ស្ទួន ការពារបញ្ជា /manual ធ្វើឱ្យចំនួនកីឡាករកើនគុណទ្វេដង 🌟
 async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, player_stats, match_score, today_players
     args = context.args
@@ -380,8 +381,12 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     matched_name = official_name
                     break
             team_a.append(matched_name)
-            if matched_name not in today_players:
-                today_players.append(matched_name)
+            # បើកីឡាករមិនទាន់បាន /join ទើបប្រព័ន្ធទាញចូលបញ្ជីវត្តមាន ដើម្បីកុំឱ្យគាំង (លុបចោលកូដចាស់ដែល append ស្ទួនៗ)
+            if matched_name not in today_players and matched_name not in waiting_list:
+                if len(today_players) < 12:
+                    today_players.append(matched_name)
+                else:
+                    waiting_list.append(matched_name)
             if matched_name not in player_stats:
                 player_stats[matched_name] = {"win": 0, "loss": 0}
                 
@@ -392,8 +397,12 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     matched_name = official_name
                     break
             team_b.append(matched_name)
-            if matched_name not in today_players:
-                today_players.append(matched_name)
+            # បើកីឡាករមិនទាន់បាន /join ទើបប្រព័ន្ធទាញចូលបញ្ជីវត្តមាន ដើម្បីកុំឱ្យគាំង (លុបចោលកូដចាស់ដែល append ស្ទួនៗ)
+            if matched_name not in today_players and matched_name not in waiting_list:
+                if len(today_players) < 12:
+                    today_players.append(matched_name)
+                else:
+                    waiting_list.append(matched_name)
             if matched_name not in player_stats:
                 player_stats[matched_name] = {"win": 0, "loss": 0}
                 
@@ -512,7 +521,7 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 loser_addon_per_person = total_drinks_fee / len(team_a)
                 report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
-                         f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
+                         f"💰 ថ្លៃតារាងសorុប៖ {court_fee:,.0f} រៀល\n" \
                          f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
                          f"🍹 ក្រុម A (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល\n" \
                          f"💵 ក្រុម B (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល"
@@ -535,9 +544,9 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     court_link = courts_database[selected_court_key]['link']
     
     if court_link != "មិនទាន់មាន":
-        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ <a href='{court_link}'>{court_name}</a>"
+        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n[✅ កក់តារាងរួចរាល់]\n🔗 លីង Map៖ <a href='{court_link}'>{court_name}</a>"
     else:
-        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅ <a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>\n🔗 លីង Map៖ <code>មិនទាន់មាន</code>"
+        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n[✅ កក់តារាងរួចរាល់]\n🔗 លីង Map៖ <code>មិនទាន់មាន</code>"
         
     await update.message.reply_text(status_msg, parse_mode="HTML")
 
@@ -551,7 +560,6 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🛠️ FIXED: លុបពាក្យ "clicking" ចេញពីលក្ខខណ្ឌ if រួចរាល់ ១០០% ការពារ SyntaxError 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
                f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
@@ -566,11 +574,10 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
         if selected_court_key is not None and key == selected_court_key:
-            status_emoji = "<a href='https://t.me/'>[✅ កក់តារាងរួចរាល់]</a>"
+            status_emoji = "[✅ កក់តារាងរួចរាល់]"
         else:
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
-        # រៀបចំលក្ខខណ្ឌឱ្យស្អាត គ្មានពាក្យកាត់ដាច់តទៅទៀតឡើយបាទបង 🌟
         if selected_court_key is not None and key == selected_court_key: 
             info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n"
             if court['link'] != "មិនទាន់មាន":
