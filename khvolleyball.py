@@ -119,7 +119,6 @@ def run_midnight_cronjob():
         else:
             print("🕒 [CRON JOB] Midnight Auto-Reset skipped (Advanced matchmaking found for tomorrow).")
 
-# 🛠️ UPDATED: បន្ថែមការណែនាំសម្រាប់ការចុះឈ្មោះឱ្យមិត្តភក្តិ តាមការណែនាំចុងក្រោយបង្អស់បាទបង 🌟
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា /join ដើម្បីចុះឈ្មោះចូលរួមប្រគួត! របៀបបញ្ជា៖ វាយ /join\n" \
           "📌 ប្រសិនបើចុះឈ្មោះអោយមិត្តភ័ក្ក សូមវាយបញ្ជា /join [ឈ្មោះមិត្តភក្តិ]"
@@ -552,6 +551,7 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
+# 🛠️ FIXED: លុបពាក្យ "clicking" ចេញពីលក្ខខណ្ឌ if រួចរាល់ ១០០% ការពារ SyntaxError 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
                f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
@@ -570,7 +570,8 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
-        if selected_court_key is not None clicking and key == selected_court_key: 
+        # រៀបចំលក្ខខណ្ឌឱ្យស្អាត គ្មានពាក្យកាត់ដាច់តទៅទៀតឡើយបាទបង 🌟
+        if selected_court_key is not None and key == selected_court_key: 
             info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n"
             if court['link'] != "មិនទាន់មាន":
                 info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
