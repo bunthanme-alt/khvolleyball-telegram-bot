@@ -78,7 +78,7 @@ def has_khmer(text):
 
 # 🕒 ៣. SYSTEM Auto-Reset (Cron Job ផ្ទៃក្នុងរៀងរាល់ម៉ោង 00:00 យប់)
 def run_midnight_cronjob():
-    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key
+    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
     while True:
         now = datetime.datetime.now()
         tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min)
@@ -93,6 +93,7 @@ def run_midnight_cronjob():
         current_teams = {"team_a": [], "team_b": []}
         match_score = {"a": 0, "b": 0}
         selected_court_key = None
+        player_stats = {}
         print("🕒 [CRON JOB] Midnight system auto-reset executed successfully!")
 
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -214,10 +215,11 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg)
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key
+    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
     today_players = []; waiting_list = []; previous_match_score = None; previous_player_stats = None
     current_teams = {"team_a": [], "team_b": []}; match_score = {"a": 0, "b": 0}
     selected_court_key = None
+    player_stats = {}
     await update.message.reply_text("♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -314,8 +316,9 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
           f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
     await update.message.reply_text(msg, parse_mode="HTML")
 
+# 🛠️ FIXED BUG: បន្ថែម Logic បញ្ចូលឈ្មោះទៅក្នុង today_players និងរក្សាឈ្មោះផ្លូវការប្រព័ន្ធ 🌟
 async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global current_teams, player_stats, match_score
+    global current_teams, player_stats, match_score, today_players
     args = context.args
     v_sign = "v" if "v" in args else ("vs" if "vs" in args else None)
     if not args or not v_sign:
@@ -323,21 +326,50 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     try:
         v_index = args.index(v_sign)
-        team_a = [p for p in args[:v_index]]
-        team_b = [p for p in args[v_index+1:]]
-        current_teams = {"team_a": team_a, "team_b": team_b}; match_score = {"a": 0, "b": 0} 
-        for p in team_a + team_b:
+        raw_team_a = args[:v_index]
+        raw_team_b = args[v_index+1:]
+        
+        team_a = []
+        team_b = []
+        
+        # ស្វែងរក និងប្ដូរឈ្មោះកីឡាករក្រុម A ទៅជាឈ្មោះផ្លូវការនៅក្នុង Database
+        for p in raw_team_a:
             matched_name = p
             for official_name in players_data.keys():
-                if official_name.lower() == p.lower(): matched_name = official_name; break
-            if matched_name not in player_stats: player_stats[matched_name] = {"win": 0, "loss": 0}
+                if official_name.lower() == p.lower():
+                    matched_name = official_name
+                    break
+            team_a.append(matched_name)
+            # បញ្ចូលឈ្មោះទៅក្នុងវត្តមានផ្លូវការថ្ងៃនេះជៀសវាង Bug stats មើលមិនឃើញ 🌟
+            if matched_name not in today_players:
+                today_players.append(matched_name)
+            if matched_name not in player_stats:
+                player_stats[matched_name] = {"win": 0, "loss": 0}
+                
+        # ស្វែងរក និងប្ដូរឈ្មោះកីឡាករក្រុម B ទៅជាឈ្មោះផ្លូវការនៅក្នុង Database
+        for p in raw_team_b:
+            matched_name = p
+            for official_name in players_data.keys():
+                if official_name.lower() == p.lower():
+                    matched_name = official_name
+                    break
+            team_b.append(matched_name)
+            # បញ្ចូលឈ្មោះទៅក្នុងវត្តមានផ្លូវការថ្ងៃនេះជៀសវាង Bug stats មើលមិនឃើញ 🌟
+            if matched_name not in today_players:
+                today_players.append(matched_name)
+            if matched_name not in player_stats:
+                player_stats[matched_name] = {"win": 0, "loss": 0}
+                
+        current_teams = {"team_a": team_a, "team_b": team_b}
+        match_score = {"a": 0, "b": 0} 
             
         msg = f"🏐 - លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n" \
               f"🔹 <b>ក្រុម A:</b> {', '.join(team_a)}\n" \
               f"———— Vs ————\n" \
               f"🔸 <b>ក្រុម B:</b> {', '.join(team_b)}"
         await update.message.reply_text(msg, parse_mode="HTML")
-    except Exception: await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
+    except Exception: 
+        await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
 
 async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score, previous_match_score, previous_player_stats
@@ -359,18 +391,10 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     match_score["b"] = sets_b
     
     for p in current_teams["team_a"]:
-        matched = p
-        for name in players_data.keys():
-            if name.lower() == p.lower(): matched = name; break
-        if matched_name := matched:
-            player_stats[matched_name] = {"win": sets_a, "loss": sets_b}
+        player_stats[p] = {"win": sets_a, "loss": sets_b}
             
     for p in current_teams["team_b"]:
-        matched = p
-        for name in players_data.keys():
-            if name.lower() == p.lower(): matched = name; break
-        if matched_name := matched:
-            player_stats[matched_name] = {"win": sets_b, "loss": sets_a}
+        player_stats[p] = {"win": sets_b, "loss": sets_a}
             
     total_sets = sets_a + sets_b
     
@@ -386,7 +410,6 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"💡 បើបងវាយច្រឡំលេខ អាចវាយ <code>/undo</code> ដើម្បីដកពិន្ទុនេះចេញវិញបានភ្លាមៗបាទ!"
     await update.message.reply_text(msg_reply, parse_mode="HTML")
 
-# 🛠️ FIXED: លុបពាក្យ biographies ចេញវិញដើម្បីភាពស្អាតបាទ 🌟
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
@@ -401,20 +424,21 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
+# 🛠️ FIXED BUG: ប្ដូរឱ្យចម្រាញ់យកស្ថិតិសមាជិកទាំងអស់ដែលមានទិន្នន័យក្នុង player_stats មកបង្ហាញច្បាស់លាស់ 🌟
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    active_stats = {name: stat for name, stat in player_stats.items() if name in today_players}
-    
-    if not active_stats:
-        await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតសម្រាប់សមាជិកដែលមានវត្តមានថ្ងៃនេះទេ។")
+    if not player_stats:
+        await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតសម្រាប់សមាជិកថ្ងៃនេះទេ។")
         return
         
     total_sets_played = match_score["a"] + match_score["b"]
         
     msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n-----------------------------------\n"
     
-    sorted_stats = sorted(active_stats.items(), key=lambda x: x[1]["win"], reverse=True)
+    # បង្ហាញកីឡាករទាំងអស់ដែលមានទិន្នន័យពិន្ទុ មិនថាបានមកពីការ join ឬការវាយបញ្ចូលក្នុង manual ឡើយ 🌟
+    sorted_stats = sorted(player_stats.items(), key=lambda x: x[1]["win"], reverse=True)
     for name, stat in sorted_stats: 
-        msg += f"👤 {name} 🏆 ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
+        if stat["win"] > 0 or stat["loss"] > 0:
+            msg += f"👤 {name} 🏆 ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
     await update.message.reply_text(msg)
 
 async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -490,20 +514,16 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🛠️ FIXED: បំបែក Tag <code> ចេញពីលីងទាំងអស់ ដើម្បីអនុញ្ញាតឱ្យលីង និងប៊ូតុងពណ៌ខៀវអាចចុចបាន ១០០% 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # ចំណងជើងធំតម្រឹមជួរកណ្ដាល Monospace
-    info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>"
+    info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
+               f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     
-    # ព័ត៌មានរួម
-    info_msg += "🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     if selected_court_key is not None:
         play_time_info = times_database[selected_time_key]
         info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    # របារខណ្ឌ និងចំណងជើងរងតម្រឹមជួរកណ្ដាល Monospace
     info_msg += "<code>-------------------------------------\n" \
-                "      📍 ទីតាំងតារាងបាល់ទះ      \n\n</code>"
+                "      🏟️  ទីតាំងតារាងបាល់ទះ  🏟️      \n\n</code>"
                
     total_courts = len(courts_database)
     for i, (key, court) in enumerate(courts_database.items(), start=1):
@@ -512,17 +532,16 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
         
-        # ដកលីង Map និងប៊ូតុងចុះឈ្មោះចេញពី Tag <code> ដើម្បីឱ្យ Click បានភ្លាមៗ 🌟
         if selected_court_key is not None and key == selected_court_key: 
             info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n"
             if court['link'] != "មិនទាន់មាន":
-                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>{court['name']}</a>\n"
+                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
             else:
                 info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
         else: 
             info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n"
             if court['link'] != "មិនទាន់មាន":
-                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>{court['name']}</a>\n"
+                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
             else:
                 info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
         
