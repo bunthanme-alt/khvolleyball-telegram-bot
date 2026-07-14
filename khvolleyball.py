@@ -242,7 +242,6 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(f"💡 រកមិនឃើញឈ្មោះ [{matched_name}] ក្នុងបញ្ជីវត្តមានថ្ងៃនេះទេ។")
 
-# 🛠️ UPDATED: ប្តូររបារខណ្ឌដាច់ៗទៅជាសញ្ញា • • • • • • • • • • • • • • 🌟
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not today_players:
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
@@ -339,7 +338,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         else: team_b.append(p)
                 elif len(team_a) < size_a:
                     team_a.append(p)
-                elif len(team_b) < size_b:
+                elif len(team_b) < size_b: 
                     team_b.append(p)
                     
     distribute_pool(level_3); distribute_pool(level_2); distribute_pool(level_1)
@@ -356,7 +355,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     msg = f"🏐 - លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n" \
           f"🔹 <b>ក្រុម A:</b> {', '.join(format_a)}\n" \
-          f"<code>• • • • • • • • • • • • • •</code>\n" \
+          f"<code>▬ ▬ ▬ Vs ▬ ▬ ▬</code>\n" \
           f"🔸 <b>ក្រុម B:</b> {', '.join(format_b)}\n\n" \
           f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
     await update.message.reply_text(msg, parse_mode="HTML")
@@ -405,11 +404,11 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         msg = f"🏐 - លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n" \
               f"🔹 <b>ក្រុម A:</b> {', '.join(team_a)}\n" \
-              f"<code>• • • • • • • • • • • • • •</code>\n" \
+              f"<code>▬ ▬ ▬ Vs ▬ ▬ ▬</code>\n" \
               f"🔸 <b>ក្រុម B:</b> {', '.join(team_b)}"
         await update.message.reply_text(msg, parse_mode="HTML")
     except Exception: 
-        await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
+        await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ।")
 
 async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score, previous_match_score, previous_player_stats
@@ -464,7 +463,6 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
-# 🛠️ UPDATED: ប្តូររបារខណ្ឌដាច់ៗទៅជាសញ្ញា • • • • • • • • • • • • • • 🌟
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not player_stats:
         await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតសម្រាប់សមាជិកថ្ងៃនេះទេ។")
@@ -504,15 +502,15 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                      f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
                      f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
                      f"🤝 លទ្ធផលប្រកួត៖ ស្មើគ្នា ({match_score['a']}-{match_score['b']}) ជានិយាម Fair Play\n" \
-                     f"💵 សមាជិកគ្រប់គ្នា (Toggle A និង B) ចេញស្មើគ្នា៖ {equal_share:,.0f} រៀល/ម្នាក់ បាទបង​​។"
+                     f"💵 សមាជិកគ្រប់គ្នា (Toggle A និង B) 出ម្នាក់៖ {equal_share:,.0f} រៀល បាទបង​​។"
         else:
             if match_score["a"] > match_score["b"]:
                 loser_addon_per_person = total_drinks_fee / len(team_b)
                 report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
                          f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
                          f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
-                         f"💵 ក្រុម A (ឈ្នះ) ចេញម្នាក់៖ {court_per_person:,.0f} រៀល\n" \
-                         f"🍹 ក្រុម B (ចាញ់) ចេញម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល"
+                         f"💵 ក្រុម A (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល\n" \
+                         f"🍹 ក្រុម B (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល"
             else:
                 loser_addon_per_person = total_drinks_fee / len(team_a)
                 report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
@@ -555,9 +553,8 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🛠️ UPDATED: ប្តូររបារខណ្ឌដាច់ៗទៅជាសញ្ញា • • • • • • • • • • • • • • 🌟
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    info_msg = "<code>🏐 - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច - 🏐\n\n</code>" \
+    info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
                f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     
     if selected_court_key is not None:
