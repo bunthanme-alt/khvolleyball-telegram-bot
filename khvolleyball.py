@@ -76,7 +76,7 @@ selected_time_key = "1"
 def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
 
-# 🕒 ៣. SMART Auto-Reset (Cron Job ផ្ទៃក្នុង៖ ពិនិត្យលក្ខខណ្ឌចាប់គូប្រកួតនៅម៉ោង 00:00 យប់) 🌟
+# 🕒 ៣. SMART Auto-Reset (Cron Job ផ្ទៃក្នុង៖ ពិនិត្យលក្ខខណ្ឌចាប់គូប្រកួតនៅម៉ោង 00:00 យប់)
 def run_midnight_cronjob():
     global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
     while True:
@@ -84,10 +84,8 @@ def run_midnight_cronjob():
         tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min)
         seconds_until_midnight = (tomorrow - now).total_seconds()
         
-        # ឱ្យប្រព័ន្ធកូដគេងរង់ចាំរហូតដល់ម៉ោង 12 យប់កណ្តាលអាធ្រាត្រ
         time.sleep(seconds_until_midnight)
         
-        # លក្ខខណ្ឌកែសម្រួល៖ បើមិនទាន់ចាប់គូប្រកួតទុកទេ ទើបឱ្យវា Auto-Reset 🌟
         if not current_teams["team_a"] and not current_teams["team_b"]:
             today_players = []
             waiting_list = []
@@ -134,6 +132,7 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = f"[Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់"
     await update.message.reply_text(msg)
 
+# 🛠️ FIXED: កែសម្រួលមុខងារ /join ឱ្យបង្ហាញសារជោគជ័យគួបផ្សំនឹងបញ្ជីឈ្មោះមានលេខរៀងចុះក្រោមភ្លាមៗ 🌟
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, player_stats
     args = context.args
@@ -163,12 +162,26 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if matched_name not in player_stats: 
         player_stats[matched_name] = {"win": 0, "loss": 0}
 
+    # បង្កើតអត្ថបទសារឆ្លើយតប និងបញ្ជីឈ្មោះកីឡាកររត់លេខរៀងចុះក្រោមស្អាតៗ 🌟
     if len(today_players) < 12:
         today_players.append(matched_name)
-        await update.message.reply_text(f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។ (កីឡាករផ្លូវការ៖ {len(today_players)}/12 នាក់)")
+        reply_msg = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។\n(កីឡាករផ្លូវការ {len(today_players)}/12)\n"
     else:
         waiting_list.append(matched_name)
-        await update.message.reply_text(f"⏳ តារាងពេញ ១២ នាក់ហើយ! បានបញ្ចូលឈ្មោះ [{matched_name}] ទៅក្នុងបញ្ជីកីឡាករបម្រុង (Waiting List ជួរទី {len(waiting_list)})")
+        reply_msg = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។\n(កីឡាករបម្រុង {len(waiting_list)})\n"
+
+    # បន្ថែមបញ្ជីឈ្មោះកីឡាករផ្លូវការរត់លេខរៀង
+    reply_msg += "\n📋 បញ្ជីកីឡាករផ្លូវការ៖\n"
+    for idx, player in enumerate(today_players, start=1):
+        reply_msg += f"{idx}. {player}\n"
+        
+    # បន្ថែមបញ្ជីឈ្មោះកីឡាករបម្រុង (បើមាន)
+    if waiting_list:
+        reply_msg += "\n⏳ បញ្ជីកីឡាករបម្រុង៖\n"
+        for idx, player in enumerate(waiting_list, start=1):
+            reply_msg += f"{idx}. {player}\n"
+
+    await update.message.reply_text(reply_msg)
 
 async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list
@@ -420,7 +433,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ biographies")
         return
         
     match_score = dict(previous_match_score)
@@ -429,7 +442,7 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     previous_match_score = None
     previous_player_stats = None
             
-    await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
+    await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not player_stats:
@@ -565,7 +578,7 @@ def main() -> None:
     # 🚀 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធបន្លំ Server បោក Render
     threading.Thread(target=start_fake_server, daemon=True).start()
     
-    # 🕒 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធ Background Smart Auto-Reset (ផ្ទៀងផ្ទាត់ការចាប់គូប្រកួត) 🌟
+    # 🕒 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធ Background Smart Auto-Reset (ផ្ទៀងផ្ទាត់ការចាប់គូប្រកួត)
     threading.Thread(target=run_midnight_cronjob, daemon=True).start()
     
     app = ApplicationBuilder().token(token).build()
