@@ -26,7 +26,7 @@ def start_fake_server():
     print(f"Fake Server running on port {port}...")
     server.serve_forever()
 
-# ២. DATABASE កីឡាករផ្លូវការ និងកម្រិតវាស់វែងសមត្ថភាព ១០០%
+# ២. DATABASE កីឡាករផ្លូវការ និងកម្រិតវាស់វែងសមត្ថភាព ១០០% (FIXED Syntax) 🌟
 players_data = {
     "Yeun": "setter",
     "BOY": "setter",
@@ -198,132 +198,9 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(reply_msg)
 
-# 🛠️ UPDATED: បន្ថែមសារសុំទោសពីក្រោមនៅពេលដែលសមាជិកវាយ /leave ដកខ្លួន 🌟
 async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list
     args = context.args
     name = " ".join(args) if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
     
     matched_name = name
-    search_name = name.lower().strip()
-    
-    all_active = today_players + waiting_list
-    
-    if has_khmer(name):
-        for p_name in all_active:
-            if p_name.strip() == name.strip():
-                matched_name = p_name
-                break
-    else:
-        for p_name in all_active:
-            if len(search_name) >= 3 and p_name.lower().startswith(search_name):
-                matched_name = p_name
-                break
-            elif p_name.lower() == search_name:
-                matched_name = p_name
-                break
-                
-    apology_note = "\nសូមអធ្យាស្រ័យបងៗថ្ងៃនេះខ្ញុំមានការរវល់ដូច្នេះមិនបានចូលរួមទេ🙏"
-        
-    if matched_name in waiting_list:
-        waiting_list.remove(matched_name)
-        await update.message.reply_text(f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីបញ្ជីកីឡាករបម្រុងរួចរាល់។{apology_note}")
-    elif matched_name in today_players:
-        today_players.remove(matched_name)
-        msg = f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីវត្តមានថ្ងៃនេះ"
-        if waiting_list:
-            next_player = waiting_list.pop(0)
-            today_players.append(next_player)
-            msg += f"\n🔄 💡 [ប្រកាស] កីឡាករសាលបម្រុង [{next_player}] បានរត់ចូលមកជំនួសជាកីឡាករផ្លូវការស្វ័យប្រវត្ត! (សរុប៖ {len(today_players)}/12 នាក់)"
-        else:
-            msg += f" (សល់៖ {len(today_players)} នាក់)"
-        
-        msg += apology_note
-        await update.message.reply_text(msg)
-    else:
-        await update.message.reply_text(f"💡 រកមិនឃើញឈ្មោះ [{matched_name}] ក្នុងបញ្ជីវត្តមានថ្ងៃនេះទេ។")
-
-async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not today_players:
-        await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
-        return
-        
-    msg = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់)\n--------------------------------------------\n"
-    for idx, player in enumerate(today_players, start=1):
-        msg += f"{idx}. {player}\n"
-        
-    if waiting_list:
-        msg += f"\n⏳ បញ្ជីកីឡាករបម្រុង ({len(waiting_list)} នាក់)៖\n--------------------------------------------\n"
-        for idx, player in enumerate(waiting_list, start=1):
-            msg += f"{idx}. {player}\n"
-            
-    await update.message.reply_text(msg)
-
-async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
-    today_players = []; waiting_list = []; previous_match_score = None; previous_player_stats = None
-    current_teams = {"team_a": [], "team_b": []}; match_score = {"a": 0, "b": 0}
-    selected_court_key = None
-    player_stats = {}
-    await update.message.reply_text("♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
-
-async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global match_score, previous_match_score, previous_player_stats, player_stats, selected_court_key
-    match_score = {"a": 0, "b": 0}
-    previous_match_score = None
-    previous_player_stats = None
-    player_stats = {}
-    selected_court_key = None
-    
-    for p in today_players:
-        player_stats[p] = {"win": 0, "loss": 0}
-        
-    await update.message.reply_text("❌ ថ្ងៃនេះមិនមានការប្រគួតទេបងប្អូន")
-
-async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global current_teams, match_score
-    total_count = len(today_players)
-    if total_count < 2:
-        await update.message.reply_text("❌ ចំនួនកីឡាករតិចពេក! សូមវាយ /join ចុះឈ្មោះសិនបាទបង។")
-        return
-    match_score = {"a": 0, "b": 0}
-    size_a = total_count // 2
-    size_b = total_count - size_a
-    team_a, team_b = [], []
-    
-    setters = [p for p in today_players if players_data.get(p) == "setter"]
-    random.shuffle(setters)
-    for i, setter in enumerate(setters):
-        if i % 2 == 0:
-            if len(team_a) < size_a: team_a.append(setter)
-            else: team_b.append(setter)
-        else:
-            if len(team_b) < size_b: team_b.append(setter)
-            else: team_a.append(setter)
-            
-    remaining_players = [p for p in today_players if p not in setters]
-    level_3 = [p for p in remaining_players if players_data.get(p, 1) == 3]
-    level_2 = [p for p in remaining_players if players_data.get(p, 1) == 2]
-    level_1 = [p for p in remaining_players if players_data.get(p, 1) == 1 or p not in players_data]
-    random.shuffle(level_3); random.shuffle(level_2); random.shuffle(level_1)
-    
-    def get_player_weight(p):
-        val = players_data.get(p, 1)
-        return 0 if val == "setter" else int(val)
-
-    def distribute_pool(player_list):
-        for p in player_list:
-            is_left = p in left_spikers_list
-            count_left_a = sum(1 for x in team_a if x in left_spikers_list)
-            count_left_b = sum(1 for x in team_b if x in left_spikers_list)
-            weight_a = sum(get_player_weight(x) for x in team_a)
-            weight_b = sum(get_player_weight(x) for x in team_b)
-            
-            if is_left:
-                if count_left_a < count_left_b and len(team_a) < size_a:
-                    team_a.append(p)
-                elif count_left_b < count_left_a and len(team_b) < size_b:
-                    team_b.append(p)
-                else:
-                    if weight_a <= weight_b and len(team_a) < size_a: team_a.append(p)
-                    elif len(team_b) < size_
