@@ -55,7 +55,7 @@ players_data = {
 }
 
 # បញ្ជីកីឡាករស្មាត់ឆ្វេងហ្ស៊ីន
-left_spikers_list = ["Bunthan(Sky)", "Lyhour", "Lxy", "Salit", "Aok Lyhour", "Khorn Salit"]
+left_spikers_list = ["Bunthan(Sky)", "Lyhour", "Lxy", "Salit", "Aok Lyhour", "Khorn Salit", "Em Bunthan"]
 today_players = []
 waiting_list = []  # បញ្ជីកីឡាករបម្រុង (Waiting List) 🌟
 current_teams = {"team_a": [], "team_b": []}
@@ -358,30 +358,58 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
           f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
     await update.message.reply_text(msg, parse_mode="HTML")
 
-# 🛠️ ត្រួតពិនិត្យរួចរាល់៖ មុខងារ /manual ចាប់គូដោយដៃ ដំណើរការបានជោគជ័យ និងសុវត្ថិភាពខ្ពស់ ១០០% 🌟
+# 🛠️ UPGRADED: មុខងារ /manual ជំនាន់ចុងក្រោយ វៃឆ្លាតបំផុត បត់បែនតាមរាល់ទម្រង់នៃការវាយបញ្ជា និងស្វែងរកឈ្មោះបាន ១០០% 🌟
 async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global current_teams, player_stats, match_score, today_players
+    global current_teams, player_stats, match_score, today_players, waiting_list
     args = context.args
-    v_sign = "v" if "v" in args else ("vs" if "vs" in args else None)
+    
+    # បំលែង Arguments ទាំងអស់ឱ្យទៅជាអត្ថបទរួម រួចជម្រុះសញ្ញាដង្កៀប [] ចេញ ការពារការវាយខុសទម្រង់ 🌟
+    raw_text = " ".join(args).replace("[", "").replace("]", "")
+    
+    # បង្កើតបញ្ជីពាក្យគន្លឹះខណ្ឌក្រុម (Case-Insensitive Splitter) 🌟
+    splitters = [" vs ", " v ", " vS ", " Vs ", " VS "]
+    v_sign = None
+    for s in splitters:
+        if s in f" {raw_text} ":
+            v_sign = s
+            break
+            
     if not args or not v_sign:
         await update.message.reply_text("❌ របៀបប្រើ៖ /manual [ក្រុមA] v [ក្រុមB]")
         return
-    try:
-        v_index = args.index(v_sign)
-        raw_team_a = args[:v_index]
-        raw_team_b = args[v_index+1:]
         
+    try:
+        # ញែកក្រុម A និង ក្រុម B ចេញពីគ្នាដោយជោគជ័យ
+        parts = raw_text.split(v_sign.strip())
+        raw_team_a = [p.strip() for p in parts[0].split() if p.strip()]
+        raw_team_b = [p.strip() for p in parts[1].split() if p.strip()]
+        
+        # មុខងារជំនួយសម្រាប់ស្វែងរកឈ្មោះកម្រិតខ្ពស់ (Advanced Substring & Case-Insensitive Search) 🌟
+        def find_official_name(input_part):
+            search_lower = input_part.lower().strip()
+            if not search_lower:
+                return input_part
+                
+            if has_khmer(input_part):
+                for official_name in players_data.keys():
+                    if search_lower in official_name.lower():
+                        return official_name
+            else:
+                # ស្វែងរកឈ្មោះកីឡាករភាសាអង់គ្លេស ទោះបីជាវាយកាត់ខ្លី ឬវាយតែពាក្យកណ្តាលក៏ដោយ 🌟
+                for official_name in players_data.keys():
+                    name_parts = official_name.lower().split()
+                    if any(part.startswith(search_lower) or search_lower in part for part in name_parts):
+                        return official_name
+                    if search_lower in official_name.lower():
+                        return official_name
+            return input_part
+
         team_a = []
         team_b = []
         
         for p in raw_team_a:
-            matched_name = p
-            for official_name in players_data.keys():
-                if official_name.lower() == p.lower():
-                    matched_name = official_name
-                    break
+            matched_name = find_official_name(p)
             team_a.append(matched_name)
-            # បើកីឡាករមិនទាន់បាន /join ទើបប្រព័ន្ធទាញចូលបញ្ជីវត្តមាន ដើម្បីកុំឱ្យគាំង (លុបចោលកូដចាស់ដែល append ស្ទួនៗ)
             if matched_name not in today_players and matched_name not in waiting_list:
                 if len(today_players) < 12:
                     today_players.append(matched_name)
@@ -391,13 +419,8 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 player_stats[matched_name] = {"win": 0, "loss": 0}
                 
         for p in raw_team_b:
-            matched_name = p
-            for official_name in players_data.keys():
-                if official_name.lower() == p.lower():
-                    matched_name = official_name
-                    break
+            matched_name = find_official_name(p)
             team_b.append(matched_name)
-            # បើកីឡាករមិនទាន់បាន /join ទើបប្រព័ន្ធទាញចូលបញ្ជីវត្តមាន ដើម្បីកុំឱ្យគាំង (លុបចោលកូដចាស់ដែល append ស្ទួនៗ)
             if matched_name not in today_players and matched_name not in waiting_list:
                 if len(today_players) < 12:
                     today_players.append(matched_name)
@@ -415,7 +438,7 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
               f"🔸 <b>ក្រុម B:</b> {', '.join(team_b)}"
         await update.message.reply_text(msg, parse_mode="HTML")
     except Exception: 
-        await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធឡើងវិញ។")
+        await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធ និងទម្រង់ខណ្ឌក្រុម (v ឬ vs) ឡើងវិញបាទបង។")
 
 async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global player_stats, match_score, previous_match_score, previous_player_stats
@@ -625,7 +648,7 @@ def main() -> None:
     app.add_handler(CommandHandler("testmode", testmode_command))
     app.add_handler(CommandHandler("match", match_command))
     
-    print("Bot started polling standard mode successfully...")
+    print("Bot started polling successfully with advanced manual support...")
     app.run_polling()
 
 if __name__ == "__main__":
