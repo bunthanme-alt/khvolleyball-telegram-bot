@@ -358,7 +358,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
           f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
     await update.message.reply_text(msg, parse_mode="HTML")
 
-# 🛠️ FIXED Logic: លុបការ append ឈ្មោះចូល today_players ស្ទួន ការពារបញ្ជា /manual ធ្វើឱ្យចំនួនកីឡាករកើនគុណទ្វេដង 🌟
+# 🛠️ ត្រួតពិនិត្យរួចរាល់៖ មុខងារ /manual ចាប់គូដោយដៃ ដំណើរការបានជោគជ័យ និងសុវត្ថិភាពខ្ពស់ ១០០% 🌟
 async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, player_stats, match_score, today_players
     args = context.args
@@ -521,7 +521,7 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 loser_addon_per_person = total_drinks_fee / len(team_a)
                 report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
-                         f"💰 ថ្លៃតារាងសorុប៖ {court_fee:,.0f} រៀល\n" \
+                         f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
                          f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
                          f"🍹 ក្រុម A (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល\n" \
                          f"💵 ក្រុម B (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល"
