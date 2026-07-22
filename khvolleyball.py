@@ -100,7 +100,7 @@ def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
 
 # ==========================================
-# ៣. ប្រព័ន្ធរក្សាទុកទិន្នន័យ (DUAL-PERSISTENCE: UPSTASH REDIS + STATE FALLBACK)
+# ៣. ប្រព័ន្ធរក្សាទុកទិន្នន័យ (DUAL-PERSISTENCE)
 # ==========================================
 UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL")
 UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
@@ -116,7 +116,6 @@ def save_state():
         "selected_time_key": selected_time_key
     }
     
-    # ជម្រើសទី ១: ព្យាយាម Save ទៅ Upstash Redis
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
@@ -128,7 +127,6 @@ def save_state():
         except Exception as e:
             print(f"⚠️ [REDIS ERROR] Could not save to Upstash: {e}")
 
-    # ជម្រើសទី ២ (Fallback): Save ចូល Local State File / JSON
     try:
         with open("state_backup.json", "w", encoding="utf-8") as f:
             json.dump(state_data, f, ensure_ascii=False)
@@ -139,7 +137,6 @@ def save_state():
 def load_state():
     global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, selected_time_key
     
-    # ជម្រើសទី ១: ព្យាយាម Load ពី Upstash Redis
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
@@ -161,7 +158,6 @@ def load_state():
         except Exception as e:
             print(f"⚠️ [REDIS ERROR] Could not load from Upstash: {e}")
 
-    # ជម្រើសទី ២ (Fallback): Load ពី Local State File
     if os.path.exists("state_backup.json"):
         try:
             with open("state_backup.json", "r", encoding="utf-8") as f:
@@ -189,7 +185,6 @@ def run_midnight_cronjob():
         
         time.sleep(seconds_until_midnight)
         
-        # Reset តែពេលមុនម៉ោង 00:00 មិនទាន់មានការចាប់គូប្រកួត
         if not current_teams["team_a"] and not current_teams["team_b"]:
             today_players = []
             waiting_list = []
@@ -239,6 +234,7 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = f"[Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់"
     await update.message.reply_text(msg)
 
+# 🛠️ UPDATED: បង្ហាញព័ត៌មានកក់តារាង + Link Map ក្នុង Join Message 🌟
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, player_stats
     args = context.args
@@ -282,7 +278,20 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     reply_msg = f"{status_txt}\n" \
                 f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n" \
-                f"⏰ <b>ម៉ោងប្រកួត៖</b> 6:30PM - 8:30PM\n\n"
+                f"⏰ <b>ម៉ោងប្រកួត៖</b> 6:30PM - 8:30PM\n"
+                
+    # ពិនិត្យមើលថាតើ Admin បាន /setmap កក់តារាងរួចហើយឬនៅ 🌟
+    if selected_court_key is not None and selected_court_key in courts_database:
+        court_info = courts_database[selected_court_key]
+        court_name = court_info['name']
+        court_link = court_info['link']
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> {court_name} [✅ កក់តារាងរួចរាល់]\n"
+        if court_link != "មិនទាន់មាន":
+            reply_msg += f"🔗 <b>លីង Map៖</b> <a href='{court_link}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n\n"
+        else:
+            reply_msg += f"🔗 <b>លីង Map៖</b> <code>មិនទាន់មាន</code>\n\n"
+    else:
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> 🟡 [មិនទាន់កក់តារាង]\n\n"
                 
     for idx, player in enumerate(today_players, start=1):
         reply_msg += f"{idx}. {player}\n"
@@ -414,355 +423,4 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     def get_player_weight(p):
         val = players_data.get(p, 1)
-        return 0 if val == "setter" else int(val)
-
-    def distribute_pool(player_list):
-        for p in player_list:
-            is_left = p in left_spikers_list
-            count_left_a = sum(1 for x in team_a if x in left_spikers_list)
-            count_left_b = sum(1 for x in team_b if x in left_spikers_list)
-            weight_a = sum(get_player_weight(x) for x in team_a)
-            weight_b = sum(get_player_weight(x) for x in team_b)
-            
-            if is_left:
-                if count_left_a < count_left_b and len(team_a) < size_a:
-                    team_a.append(p)
-                elif count_left_b < count_left_a and len(team_b) < size_b:
-                    team_b.append(p)
-                else:
-                    if weight_a <= weight_b and len(team_a) < size_a: team_a.append(p)
-                    elif len(team_b) < size_b: team_b.append(p)
-                    else:
-                        if len(team_a) < size_a: team_a.append(p)
-                        else: team_b.append(p)
-            else:
-                if len(team_a) < size_a and len(team_b) < size_b:
-                    if weight_a < weight_b: team_a.append(p)
-                    elif weight_b < weight_a: team_b.append(p)
-                    else:
-                        if len(team_a) <= len(team_b): team_a.append(p)
-                        else: team_b.append(p)
-                elif len(team_a) < size_a:
-                    team_a.append(p)
-                elif len(team_b) < size_b: 
-                    team_b.append(p)
-                    
-    distribute_pool(level_3); distribute_pool(level_2); distribute_pool(level_1)
-    current_teams = {"team_a": team_a, "team_b": team_b}
-    save_state()
-    
-    def format_player_name(p):
-        tags = []
-        if players_data.get(p) == "setter": tags.append("ប៉ះសេហ្ស៊ីន")
-        if p in left_spikers_list: tags.append("ឆ្វេងហ្ស៊ីន")
-        return f"{p}({','.join(tags)})" if tags else p
-        
-    format_a = [format_player_name(p) for p in team_a]
-    format_b = [format_player_name(p) for p in team_b]
-        
-    msg = f"🏐 - លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n" \
-          f"🔹 <b>ក្រុម A:</b> {', '.join(format_a)}\n" \
-          f"<code>▬ ▬ ▬ Vs ▬ ▬ ▬</code>\n" \
-          f"🔸 <b>ក្រុម B:</b> {', '.join(format_b)}\n\n" \
-          f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
-    await update.message.reply_text(msg, parse_mode="HTML")
-
-async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global current_teams, player_stats, match_score, today_players, waiting_list
-    args = context.args
-    
-    raw_text = " ".join(args).replace("[", "").replace("]", "")
-    splitters = [" vs ", " v ", " vS ", " Vs ", " VS "]
-    v_sign = None
-    for s in splitters:
-        if s in f" {raw_text} ":
-            v_sign = s
-            break
-            
-    if not args or not v_sign:
-        await update.message.reply_text("❌ របៀបប្រើ៖ /manual [ក្រុមA] v [ក្រុមB]")
-        return
-        
-    try:
-        parts = raw_text.split(v_sign.strip())
-        raw_team_a = [p.strip() for p in parts[0].split() if p.strip()]
-        raw_team_b = [p.strip() for p in parts[1].split() if p.strip()]
-        
-        def find_official_name(input_part):
-            search_lower = input_part.lower().strip()
-            if not search_lower:
-                return input_part
-                
-            if has_khmer(input_part):
-                for official_name in players_data.keys():
-                    if search_lower in official_name.lower():
-                        return official_name
-            else:
-                for official_name in players_data.keys():
-                    name_parts = official_name.lower().split()
-                    if any(part.startswith(search_lower) or search_lower in part for part in name_parts):
-                        return official_name
-                    if search_lower in official_name.lower():
-                        return official_name
-            return input_part
-
-        team_a = []
-        team_b = []
-        
-        for p in raw_team_a:
-            matched_name = find_official_name(p)
-            team_a.append(matched_name)
-            if matched_name not in today_players and matched_name not in waiting_list:
-                if len(today_players) < 12:
-                    today_players.append(matched_name)
-                else:
-                    waiting_list.append(matched_name)
-            if matched_name not in player_stats:
-                player_stats[matched_name] = {"win": 0, "loss": 0}
-                
-        for p in raw_team_b:
-            matched_name = find_official_name(p)
-            team_b.append(matched_name)
-            if matched_name not in today_players and matched_name not in waiting_list:
-                if len(today_players) < 12:
-                    today_players.append(matched_name)
-                else:
-                    waiting_list.append(matched_name)
-            if matched_name not in player_stats:
-                player_stats[matched_name] = {"win": 0, "loss": 0}
-                
-        current_teams = {"team_a": team_a, "team_b": team_b}
-        match_score = {"a": 0, "b": 0} 
-        save_state()
-            
-        msg = f"🏐 - លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n" \
-              f"🔹 <b>ក្រុម A:</b> {', '.join(team_a)}\n" \
-              f"<code>▬ ▬ ▬ Vs ▬ ▬ ▬</code>\n" \
-              f"🔸 <b>ក្រុម B:</b> {', '.join(team_b)}"
-        await update.message.reply_text(msg, parse_mode="HTML")
-    except Exception: 
-        await update.message.reply_text("❌ សូមពិនិត្យមើលអក្ខរាវិរុទ្ធ និងទម្រង់ខណ្ឌក្រុម (v ឬ vs) ឡើងវិញបាទបង។")
-
-async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global player_stats, match_score, previous_match_score, previous_player_stats
-    args = context.args
-    if len(args) < 2 or not args[0].isdigit() or not args[1].isdigit():
-        await update.message.reply_text("❌ របៀបប្រើ៖ វាយ `/setscore [សិតឈ្នះ_A] [សិតឈ្នះ_B]`\n👉 ឧទាហរណ៍៖ `/setscore 2 1`")
-        return
-    if not current_teams["team_a"] or not current_teams["team_b"]:
-        await update.message.reply_text("❌ មិនទាន់មានការចាប់គូប្រកួតតារាងថ្ងៃនេះទេ!")
-        return
-        
-    sets_a = int(args[0])
-    sets_b = int(args[1])
-    
-    previous_match_score = dict(match_score)
-    previous_player_stats = {k: dict(v) for k, v in player_stats.items()}
-    
-    match_score["a"] = sets_a
-    match_score["b"] = sets_b
-    
-    for p in current_teams["team_a"]:
-        player_stats[p] = {"win": sets_a, "loss": sets_b}
-            
-    for p in current_teams["team_b"]:
-        player_stats[p] = {"win": sets_b, "loss": sets_a}
-            
-    total_sets = sets_a + sets_b
-    save_state()
-    
-    if sets_a > sets_b:
-        result_msg = f"🎉 លទ្ធផលថ្ងៃនេះ៖ ក្រុម A ឈ្នះក្រុម B ដោយពិន្ទុ {sets_a}-{sets_b}"
-    elif sets_b > sets_a:
-        result_msg = f"🎉 លទ្ធផលថ្ងៃនេះ៖ ក្រុម B ឈ្នះក្រុម A ដោយពិន្ទុ {sets_b}-{sets_a}"
-    else:
-        result_msg = f"🤝 លទ្ធផលថ្ងៃនេះ៖ ក្រុមទាំងពីរស្មើគ្នា {sets_a}-{sets_b}"
-        
-    msg_reply = f"✅ [ប្រព័ន្ធបានកត់ត្រារួចរាល់] លេងបានសរុប៖ {total_sets} សិត\n\n" \
-                f"{result_msg}\n\n" \
-                f"💡 បើបងវាយច្រឡំលេខ អាចវាយ <code>/undo</code> ដើម្បីដកពិន្ទុនេះចេញវិញបានភ្លាមៗបាទ!"
-    await update.message.reply_text(msg_reply, parse_mode="HTML")
-
-async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global match_score, previous_match_score, player_stats, previous_player_stats
-    if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
-        return
-        
-    match_score = dict(previous_match_score)
-    player_stats = {k: dict(v) for k, v in previous_player_stats.items()}
-    
-    previous_match_score = None
-    previous_player_stats = None
-    save_state()
-            
-    await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
-
-async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not player_stats:
-        await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតសម្រាប់សមាជិកថ្ងៃនេះទេ។")
-        return
-        
-    total_sets_played = match_score["a"] + match_score["b"]
-        
-    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n<code>• • • • • • • • • • • • • •</code>\n"
-    
-    sorted_stats = sorted(player_stats.items(), key=lambda x: x[1]["win"], reverse=True)
-    for name, stat in sorted_stats: 
-        if stat["win"] > 0 or stat["loss"] > 0:
-            trophy = "🏆 " if stat["win"] > stat["loss"] else "👤 "
-            msg += f"{trophy}{name} ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
-            
-    await update.message.reply_text(msg, parse_mode="HTML")
-
-async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not current_teams["team_a"]:
-        await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
-        return
-    args = context.args
-    if len(args) < 2:
-        await update.message.reply_text("❌ របៀបប្រើ៖ /calculate [ថ្លៃតារាង] [ថ្លៃទឹក]")
-        return
-    try:
-        court_fee = float(args[0])
-        total_drinks_fee = sum([float(arg) for arg in args[1:]])
-        team_a = current_teams["team_a"]
-        team_b = current_teams["team_b"]
-        total_people = len(team_a) + len(team_b)
-        court_per_person = court_fee / total_people
-        
-        if match_score["a"] == match_score["b"]:
-            equal_share = (court_fee + total_drinks_fee) / total_people
-            report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
-                     f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
-                     f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
-                     f"🤝 លទ្ធផលប្រកួត៖ ស្មើគ្នា ({match_score['a']}-{match_score['b']}) ជានិយាម Fair Play\n" \
-                     f"💵 សមាជិកគ្រប់គ្នា (Toggle A និង B) 出ម្នាក់៖ {equal_share:,.0f} រៀល បាទបង​​។"
-        else:
-            if match_score["a"] > match_score["b"]:
-                loser_addon_per_person = total_drinks_fee / len(team_b)
-                report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
-                         f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
-                         f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
-                         f"💵 ក្រុម A (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល\n" \
-                         f"🍹 ក្រុម B (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល"
-            else:
-                loser_addon_per_person = total_drinks_fee / len(team_a)
-                report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
-                         f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
-                         f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
-                         f"🍹 ក្រុម A (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល\n" \
-                         f"💵 ក្រុម B (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល"
-        await update.message.reply_text(report)
-    except ValueError:
-        await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
-
-async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global selected_court_key
-    args = context.args
-    if not args or args[0] not in courts_database:
-        msg = "❌ របៀបប្រើ៖ វាយ /setmap [លេខកូដ] ដើម្បីជ្រើសរើសតារាងប្រគួតថ្ងៃនេះ៖\n\n"
-        for key, court in courts_database.items():
-            msg += f"👉 /setmap {key} ➡️ {court['name']}\n🔗 លីង Map៖ {court['link']}\n\n"
-        await update.message.reply_text(msg)
-        return
-    selected_court_key = args[0]
-    save_state()
-    
-    court_name = courts_database[selected_court_key]['name']
-    court_link = courts_database[selected_court_key]['link']
-    
-    if court_link != "មិនទាន់មាន":
-        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n[✅ កក់តារាងរួចរាល់]\n🔗 លីង Map៖ <a href='{court_link}'>{court_name}</a>"
-    else:
-        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n[✅ កក់តារាងរួចរាល់]\n🔗 លីង Map៖ <code>មិនទាន់មាន</code>"
-        
-    await update.message.reply_text(status_msg, parse_mode="HTML")
-
-async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global selected_time_key
-    args = context.args
-    if not args or args[0] not in times_database:
-        await update.message.reply_text("❌ របៀបប្រើ៖ វាយ `/settime [លេខកូដ]` ដើម្បីជ្រើសរើសម៉ោងប្រគួត៖\n\n"); return
-    selected_time_key = args[0]
-    save_state()
-    
-    chosen_time_text = times_database[selected_time_key]
-    await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
-
-async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
-               f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
-    
-    if selected_court_key is not None:
-        play_time_info = times_database[selected_time_key]
-        info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
-        
-    info_msg += "<code>• • • • • • • • • • • • • •\n" \
-                "      🏟️  ទីតាំងតារាងបាល់ទះ  🏟️      \n\n</code>"
-               
-    total_courts = len(courts_database)
-    for i, (key, court) in enumerate(courts_database.items(), start=1):
-        if selected_court_key is not None and key == selected_court_key:
-            status_emoji = "[✅ កក់តារាងរួចរាល់]"
-        else:
-            status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
-        
-        if selected_court_key is not None and key == selected_court_key: 
-            info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n"
-            if court['link'] != "មិនទាន់មាន":
-                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
-            else:
-                info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
-        else: 
-            info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n"
-            if court['link'] != "មិនទាន់មាន":
-                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
-            else:
-                info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
-        
-        if i < total_courts:
-            info_msg += "<code>• • • • • • • • • • • • • •\n</code>"
-            
-    info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
-    
-    await update.message.reply_text(info_msg, parse_mode="HTML")
-
-# ==========================================
-# ៦. MAIN FUNCTION
-# ==========================================
-def main() -> None:
-    token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
-    
-    # 🔄 Load ទិន្នន័យចាស់មកវិញស្វ័យប្រវត្តិ (ពី Upstash Redis ឬ Local State Backup)
-    load_state()
-    
-    # 🚀 ចាប់ផ្ដើម Fake Server សម្រាប់ Render
-    threading.Thread(target=start_fake_server, daemon=True).start()
-    
-    # 🕒 ចាប់ផ្ដើម Background Cron Job ម៉ោង 00:00 យប់ (កម្ពុជា)
-    threading.Thread(target=run_midnight_cronjob, daemon=True).start()
-    
-    app = ApplicationBuilder().token(token).build()
-    app.add_handler(CommandHandler("join", join_command))
-    app.add_handler(CommandHandler("leave", leave_command))
-    app.add_handler(CommandHandler("list", list_command))
-    app.add_handler(CommandHandler("clear", clear_command))
-    app.add_handler(CommandHandler("cancel", cancel_command))
-    app.add_handler(CommandHandler("shuffle", shuffle_command))
-    app.add_handler(CommandHandler("manual", manual_command))
-    app.add_handler(CommandHandler("setscore", setscore_command))
-    app.add_handler(CommandHandler("undo", undo_command))
-    app.add_handler(CommandHandler("stats", stats_command))
-    app.add_handler(CommandHandler("calculate", calculate_command))
-    app.add_handler(CommandHandler("setmap", setmap_command))
-    app.add_handler(CommandHandler("settime", settime_command))
-    app.add_handler(CommandHandler("info", info_command))
-    app.add_handler(CommandHandler("testmode", testmode_command))
-    app.add_handler(CommandHandler("match", match_command))
-    
-    print("Bot started polling with Dual-Layer Persistence System...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+        return 0 if val == "setter"
