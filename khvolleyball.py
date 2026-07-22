@@ -49,7 +49,7 @@ players_data = {
     "Mang Thona": 2,
     "Lxy": 2,
     "Aok Lyhour": 2,
-    "𝐌𝐫-𝐖𝐚𝐧🇰🇭": 2,
+    "𝐌ρη-𝐖𝐚𝐧🇰🇭": 2,
     "Khorn Salit": 2,
     "ផល មិនា🇰🇭": 2,
     "Em Bunthan": 2,
@@ -211,19 +211,19 @@ def build_attendance_message(header_txt=""):
         reply_msg += f"{header_txt}\n"
         
     reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n" \
-                f"⏰ <b>ម៉ោងប្រកួត៖</b> 6:30PM - 8:30PM\n"
+                 f"⏰ <b>ម៉ោងប្រកួត៖</b> 6:30PM - 8:30PM\n"
                 
     if selected_court_key is not None and selected_court_key in courts_database:
         court_info = courts_database[selected_court_key]
         court_name = court_info['name']
         court_link = court_info['link']
-        reply_msg += f"🏟️ <b>ទីតាំង៖</b> {court_name} ✅ កក់តារាងរួចរាល់\n"
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> {court_name} [✅ កក់តារាងរួចរាល់]\n"
         if court_link != "មិនទាន់មាន":
             reply_msg += f"🔗 <b>លីង Map៖</b> <a href='{court_link}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n\n"
         else:
             reply_msg += f"🔗 <b>លីង Map៖</b> <code>មិនទាន់មាន</code>\n\n"
     else:
-        reply_msg += f"🏟️ <b>ទីតាំង៖</b> 🟡 មិនទាន់កក់តារាង\n\n"
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> 🟡 [មិនទាន់កក់តារាង]\n\n"
                 
     if today_players:
         for idx, player in enumerate(today_players, start=1):
@@ -304,7 +304,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 break
         
     if matched_name in today_players or matched_name in waiting_list:
-        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ chart។")
+        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ។")
         return
 
     if matched_name not in player_stats: 
@@ -321,6 +321,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_msg = build_attendance_message(status_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML")
 
+# 🛠️ UPDATED: មុខងារ Leave បង្ហាញដូច /join និង /list ទាំងស្រុង 🌟
 async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list
     args = context.args
@@ -349,30 +350,30 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if matched_name in waiting_list:
         waiting_list.remove(matched_name)
         save_state()
-        await update.message.reply_text(f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីបញ្ជីកីឡាករបម្រុងរួចរាល់។{apology_note}")
+        status_txt = f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីបញ្ជីកីឡាករបម្រុងរួចរាល់!{apology_note}"
+        reply_msg = build_attendance_message(status_txt)
+        await update.message.reply_text(reply_msg, parse_mode="HTML")
     elif matched_name in today_players:
         today_players.remove(matched_name)
-        msg = f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីវត្តមានថ្ងៃនេះ"
+        status_txt = f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីវត្តមានថ្ងៃនេះ"
         if waiting_list:
             next_player = waiting_list.pop(0)
             today_players.append(next_player)
-            msg += f"\n🔄 💡 [ប្រកាស] កីឡាករសាលបម្រុង [{next_player}] បានរត់ចូលមកជំនួសជាកីឡាករផ្លូវការស្វ័យប្រវត្ត! (សរុប៖ {len(today_players)}/12 នាក់)"
-        else:
-            msg += f" (សល់៖ {len(today_players)} នាក់)"
-        
+            status_txt += f"\n🔄 💡 [ប្រកាស] កីឡាករសាលបម្រុង [{next_player}] បានរត់ចូលមកជំនួសជាកីឡាករផ្លូវការស្វ័យប្រវត្ត!"
+            
+        status_txt += apology_note
         save_state()
-        msg += apology_note
-        await update.message.reply_text(msg)
+        reply_msg = build_attendance_message(status_txt)
+        await update.message.reply_text(reply_msg, parse_mode="HTML")
     else:
         await update.message.reply_text(f"💡 រកមិនឃើញឈ្មោះ [{matched_name}] ក្នុងបញ្ជីវត្តមានថ្ងៃនេះទេ។")
 
-# 🛠️ UPDATED: បង្ហាញដូច /join ទាំងស្រុង 🌟
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not today_players and not waiting_list:
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
         return
         
-    header_txt = f"📋 បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់)"
+    header_txt = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) - 📋"
     reply_msg = build_attendance_message(header_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML")
 
@@ -800,7 +801,7 @@ def main() -> None:
     app.add_handler(CommandHandler("testmode", testmode_command))
     app.add_handler(CommandHandler("match", match_command))
     
-    print("Bot started polling with Unified List & Join format...")
+    print("Bot started polling with Unified Join, List, and Leave format...")
     app.run_polling()
 
 if __name__ == "__main__":
