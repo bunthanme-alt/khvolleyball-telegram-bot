@@ -1,13 +1,17 @@
 import random
 import os
+import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 import datetime
 import time
+import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# ១. ប្រព័ន្ធបន្លំ Server យ៉ាងសាមញ្ញបំផុត ដើម្បីបោក Render កុំឱ្យវាលោត Failed 🌟
+# ==========================================
+# ១. ប្រព័ន្ធបន្លំ Server សម្រាប់ Render
+# ==========================================
 class FakeServer(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -26,7 +30,9 @@ def start_fake_server():
     print(f"Fake Server running on port {port}...")
     server.serve_forever()
 
-# ២. DATABASE កីឡាករផ្លូវការ និងកម្រិតវាស់វែងសមត្ថភាព ១០០%
+# ==========================================
+# ២. DATABASE កីឡាករផ្លូវការ និងការកំណត់ Timezone
+# ==========================================
 players_data = {
     "Yeun": "setter",
     "BOY": "setter",
@@ -54,22 +60,20 @@ players_data = {
     "Khai Titi(Libero)": 1
 }
 
-# បញ្ជីកីឡាករស្មាត់ឆ្វេងហ្ស៊ីន
 left_spikers_list = ["Bunthan(Sky)", "Lyhour", "Lxy", "Salit", "Aok Lyhour", "Khorn Salit", "Em Bunthan"]
 today_players = []
-waiting_list = []  # បញ្ជីកីឡាករបម្រុង (Waiting List) 🌟
+waiting_list = []  
 current_teams = {"team_a": [], "team_b": []}
 player_stats = {}
 match_score = {"a": 0, "b": 0}
 
-# ប្រព័ន្ធ Backup ទាំងពិន្ទុ និងស្ថិតិបុគ្គល ដើម្បីមុខងារ Undo ដើរបានត្រឹមត្រូវបំផុត
 previous_match_score = None  
 previous_player_stats = None  
 
 courts_database = {
     "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "មិនទាន់មាន"},
     "2": {"name": "តារាងបាល់ទះ (សែនសុខ)", "link": "https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic"},
-    "3": {"name": "តារាងបាល់ទះ (ពូ PM-ប្រគួតដោយសុវត្ថិភាព/កុំបារម្មណ៍)", "link": "មិនទាន់មាន"}
+    "3": {"name": "តារាងបាល់ទះ (ពូ PM-ប្រគួតដោយសុវត្ថិភាព/កុំបារម្មណ៍)", "link": "https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc"}
 }
 
 times_database = {
@@ -78,12 +82,10 @@ times_database = {
     "3": "៦:០០ ល្ងាច ដល់ ៧:៣០ យប់",
     "4": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
     "5": "៥:៣០ យប់ ដល់ ៧:០០ យប់",
-    
     "6": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:៣០ ព្រឹក (លេង ១ម៉ោងកន្លះ)",
     "7": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:០០ ព្រឹក ដល់ ១០:០០ ព្រឹក (លេង ២ម៉ោង)",
     "8": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ៩:៣០ ព្រឹក ដល់ ១១:៣០ ព្រឹក (លេង ២ម៉ោង)",
     "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក) ➡️ ១០:៣០ ព្រឹក ដល់ ១២:០០ ថ្ងៃត្រង់ (លេង ១ម៉ោងកន្លះ)",
-    
     "10": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:០០ រសៀល ដល់ ៣:០០ រសៀល (លេង ២ម៉ោង)",
     "11": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ១:៣០ រសៀល ដល់ ៣:៣០ រសៀល (លេង ២ម៉ោង)",
     "12": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (រសៀល) ➡️ ៣:០០ រសៀល ដល់ ៤:៣០ ល្ងាច (លេង ១ម៉ោងកន្លះ)",
@@ -92,20 +94,102 @@ times_database = {
 
 selected_court_key = None
 selected_time_key = "1"
+ICT = datetime.timezone(datetime.timedelta(hours=7))
 
 def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
 
-# 🕒 ៣. SMART Auto-Reset (Cron Job ផ្ទៃក្នុង៖ ពិនិត្យលក្ខខណ្ឌចាប់គូប្រកួតនៅម៉ោង 00:00 យប់)
+# ==========================================
+# ៣. ប្រព័ន្ធរក្សាទុកទិន្នន័យ (DUAL-PERSISTENCE: UPSTASH REDIS + STATE FALLBACK)
+# ==========================================
+UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL")
+UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
+
+def save_state():
+    state_data = {
+        "today_players": today_players,
+        "waiting_list": waiting_list,
+        "current_teams": current_teams,
+        "player_stats": player_stats,
+        "match_score": match_score,
+        "selected_court_key": selected_court_key,
+        "selected_time_key": selected_time_key
+    }
+    
+    # ជម្រើសទី ១: ព្យាយាម Save ទៅ Upstash Redis
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            payload = json.dumps(state_data)
+            url = f"{UPSTASH_URL.rstrip('/')}/set/bot_volleyball_state"
+            requests.post(url, headers=headers, data=payload, timeout=5)
+            print("💾 [DATA] State saved successfully to Upstash Redis Cloud!")
+            return
+        except Exception as e:
+            print(f"⚠️ [REDIS ERROR] Could not save to Upstash: {e}")
+
+    # ជម្រើសទី ២ (Fallback): Save ចូល Local State File / JSON
+    try:
+        with open("state_backup.json", "w", encoding="utf-8") as f:
+            json.dump(state_data, f, ensure_ascii=False)
+        print("💾 [DATA] State saved to Local Backup State File!")
+    except Exception as e:
+        print(f"⚠️ [STATE ERROR] Could not save local state: {e}")
+
+def load_state():
+    global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, selected_time_key
+    
+    # ជម្រើសទី ១: ព្យាយាម Load ពី Upstash Redis
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            url = f"{UPSTASH_URL.rstrip('/')}/get/bot_volleyball_state"
+            res = requests.get(url, headers=headers, timeout=5)
+            if res.status_code == 200:
+                result = res.json().get("result")
+                if result:
+                    data = json.loads(result)
+                    today_players = data.get("today_players", [])
+                    waiting_list = data.get("waiting_list", [])
+                    current_teams = data.get("current_teams", {"team_a": [], "team_b": []})
+                    player_stats = data.get("player_stats", {})
+                    match_score = data.get("match_score", {"a": 0, "b": 0})
+                    selected_court_key = data.get("selected_court_key")
+                    selected_time_key = data.get("selected_time_key", "1")
+                    print("🔄 [DATA] State restored from Upstash Redis Cloud!")
+                    return
+        except Exception as e:
+            print(f"⚠️ [REDIS ERROR] Could not load from Upstash: {e}")
+
+    # ជម្រើសទី ២ (Fallback): Load ពី Local State File
+    if os.path.exists("state_backup.json"):
+        try:
+            with open("state_backup.json", "r", encoding="utf-8") as f:
+                data = json.load(f)
+                today_players = data.get("today_players", [])
+                waiting_list = data.get("waiting_list", [])
+                current_teams = data.get("current_teams", {"team_a": [], "team_b": []})
+                player_stats = data.get("player_stats", {})
+                match_score = data.get("match_score", {"a": 0, "b": 0})
+                selected_court_key = data.get("selected_court_key")
+                selected_time_key = data.get("selected_time_key", "1")
+                print("🔄 [DATA] State restored from Local Backup State File!")
+        except Exception as e:
+            print(f"⚠️ [STATE ERROR] Could not load local state: {e}")
+
+# ==========================================
+# ៤. SMART Auto-Reset (ម៉ោង 00:00 យប់នៅកម្ពុជា)
+# ==========================================
 def run_midnight_cronjob():
     global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
     while True:
-        now = datetime.datetime.now()
-        tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min)
+        now = datetime.datetime.now(ICT)
+        tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min, tzinfo=ICT)
         seconds_until_midnight = (tomorrow - now).total_seconds()
         
         time.sleep(seconds_until_midnight)
         
+        # Reset តែពេលមុនម៉ោង 00:00 មិនទាន់មានការចាប់គូប្រកួត
         if not current_teams["team_a"] and not current_teams["team_b"]:
             today_players = []
             waiting_list = []
@@ -115,10 +199,14 @@ def run_midnight_cronjob():
             match_score = {"a": 0, "b": 0}
             selected_court_key = None
             player_stats = {}
-            print("🕒 [CRON JOB] Midnight Auto-Reset executed (No advanced matchmaking found).")
+            save_state()
+            print("🕒 [CRON JOB] Midnight Auto-Reset executed at 00:00 Cambodia Time (ICT).")
         else:
-            print("🕒 [CRON JOB] Midnight Auto-Reset skipped (Advanced matchmaking found for tomorrow).")
+            print("🕒 [CRON JOB] Midnight Auto-Reset skipped (Advanced match exists).")
 
+# ==========================================
+# ៥. COMMAND HANDLERS
+# ==========================================
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា /join ដើម្បីចុះឈ្មោះចូលរួមប្រគួត! របៀបបញ្ជា៖ វាយ /join\n" \
           "📌 ប្រសិនបើចុះឈ្មោះអោយមិត្តភ័ក្ក សូមវាយបញ្ជា /join [ឈ្មោះមិត្តភក្តិ]"
@@ -146,6 +234,7 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if p_name not in player_stats: 
             player_stats[p_name] = {"win": 0, "loss": 0}
             
+    save_state()
     team_format = f"{total_to_add // 2} Vs {total_to_add - (total_to_add // 2)}" if args else "ទាំងអស់"
     msg = f"[Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់"
     await update.message.reply_text(msg)
@@ -181,20 +270,36 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if len(today_players) < 12:
         today_players.append(matched_name)
-        reply_msg = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។\n(កីឡាករផ្លូវការ {len(today_players)}/12)\n"
+        status_txt = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ។\n(កីឡាករផ្លូវការ {len(today_players)}/12)"
     else:
         waiting_list.append(matched_name)
-        reply_msg = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ。\n(កីឡាករបម្រុង {len(waiting_list)})\n"
+        status_txt = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ。\n(កីឡាករបម្រុង {len(waiting_list)})"
 
+    save_state()
+
+    now_kh = datetime.datetime.now(ICT)
+    date_str = now_kh.strftime("%d/%m/%Y")
+    
+    reply_msg = f"{status_txt}\n" \
+                f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n" \
+                f"⏰ <b>ម៉ោងប្រកួត៖</b> 6:30PM - 8:30PM\n\n"
+                
     for idx, player in enumerate(today_players, start=1):
         reply_msg += f"{idx}. {player}\n"
         
     if waiting_list:
-        reply_msg += "\n⏳ បញ្ជីកីឡាករបម្រុង៖\n"
+        reply_msg += "\n⏳ <b>បញ្ជីកីឡាករបម្រុង៖</b>\n"
         for idx, player in enumerate(waiting_list, start=1):
             reply_msg += f"{idx}. {player}\n"
 
-    await update.message.reply_text(reply_msg)
+    reply_msg += "\n<code>• • • • • • • • • • • • • •</code>\n" \
+                 "💡 <b>ការណែនាំ៖</b>\n" \
+                 "• ចូលរួមប្រគួតដោយគ្រាន់តែវាយ /join ជាការស្រេចសម្រាប់សមាជិកដែលមានឈ្មោះនៅក្នុងគ្រុប Telegram\n" \
+                 "• សម្រាប់ចុះឈ្មោះឱ្យមិត្តភក្តិសូមវាយ /join [ឈ្មោះមិត្តភក្តិ]\n" \
+                 "• ប្រសិនបើមិនបានចូលរួមការប្រគួតសូមវាយ /leave ជាការស្រេចសម្រាប់សមាជិកដែលមានឈ្មោះនៅក្នុងគ្រុប Telegram\n" \
+                 "• សម្រាប់មិត្តភក្តិសូមវាយ /leave [ឈ្មោះមិត្តភក្តិ]"
+
+    await update.message.reply_text(reply_msg, parse_mode="HTML")
 
 async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list
@@ -203,7 +308,6 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     matched_name = name
     search_name = name.lower().strip()
-    
     all_active = today_players + waiting_list
     
     if has_khmer(name):
@@ -224,6 +328,7 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     if matched_name in waiting_list:
         waiting_list.remove(matched_name)
+        save_state()
         await update.message.reply_text(f"❌ បានដកឈ្មោះ [{matched_name}] ចេញពីបញ្ជីកីឡាករបម្រុងរួចរាល់។{apology_note}")
     elif matched_name in today_players:
         today_players.remove(matched_name)
@@ -235,6 +340,7 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             msg += f" (សល់៖ {len(today_players)} នាក់)"
         
+        save_state()
         msg += apology_note
         await update.message.reply_text(msg)
     else:
@@ -262,6 +368,7 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_teams = {"team_a": [], "team_b": []}; match_score = {"a": 0, "b": 0}
     selected_court_key = None
     player_stats = {}
+    save_state()
     await update.message.reply_text("♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -275,6 +382,7 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for p in today_players:
         player_stats[p] = {"win": 0, "loss": 0}
         
+    save_state()
     await update.message.reply_text("❌ ថ្ងៃនេះមិនមានការប្រគួតទេបងប្អូន")
 
 async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -341,6 +449,7 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     
     distribute_pool(level_3); distribute_pool(level_2); distribute_pool(level_1)
     current_teams = {"team_a": team_a, "team_b": team_b}
+    save_state()
     
     def format_player_name(p):
         tags = []
@@ -358,15 +467,11 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
           f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
     await update.message.reply_text(msg, parse_mode="HTML")
 
-# 🛠️ UPGRADED: មុខងារ /manual ជំនាន់ចុងក្រោយ វៃឆ្លាតបំផុត បត់បែនតាមរាល់ទម្រង់នៃការវាយបញ្ជា និងស្វែងរកឈ្មោះបាន ១០០% 🌟
 async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_teams, player_stats, match_score, today_players, waiting_list
     args = context.args
     
-    # បំលែង Arguments ទាំងអស់ឱ្យទៅជាអត្ថបទរួម រួចជម្រុះសញ្ញាដង្កៀប [] ចេញ ការពារការវាយខុសទម្រង់ 🌟
     raw_text = " ".join(args).replace("[", "").replace("]", "")
-    
-    # បង្កើតបញ្ជីពាក្យគន្លឹះខណ្ឌក្រុម (Case-Insensitive Splitter) 🌟
     splitters = [" vs ", " v ", " vS ", " Vs ", " VS "]
     v_sign = None
     for s in splitters:
@@ -379,12 +484,10 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
         
     try:
-        # ញែកក្រុម A និង ក្រុម B ចេញពីគ្នាដោយជោគជ័យ
         parts = raw_text.split(v_sign.strip())
         raw_team_a = [p.strip() for p in parts[0].split() if p.strip()]
         raw_team_b = [p.strip() for p in parts[1].split() if p.strip()]
         
-        # មុខងារជំនួយសម្រាប់ស្វែងរកឈ្មោះកម្រិតខ្ពស់ (Advanced Substring & Case-Insensitive Search) 🌟
         def find_official_name(input_part):
             search_lower = input_part.lower().strip()
             if not search_lower:
@@ -395,7 +498,6 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     if search_lower in official_name.lower():
                         return official_name
             else:
-                # ស្វែងរកឈ្មោះកីឡាករភាសាអង់គ្លេស ទោះបីជាវាយកាត់ខ្លី ឬវាយតែពាក្យកណ្តាលក៏ដោយ 🌟
                 for official_name in players_data.keys():
                     name_parts = official_name.lower().split()
                     if any(part.startswith(search_lower) or search_lower in part for part in name_parts):
@@ -431,6 +533,7 @@ async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 
         current_teams = {"team_a": team_a, "team_b": team_b}
         match_score = {"a": 0, "b": 0} 
+        save_state()
             
         msg = f"🏐 - លទ្ធផល Manual ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n" \
               f"🔹 <b>ក្រុម A:</b> {', '.join(team_a)}\n" \
@@ -466,6 +569,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         player_stats[p] = {"win": sets_b, "loss": sets_a}
             
     total_sets = sets_a + sets_b
+    save_state()
     
     if sets_a > sets_b:
         result_msg = f"🎉 លទ្ធផលថ្ងៃនេះ៖ ក្រុម A ឈ្នះក្រុម B ដោយពិន្ទុ {sets_a}-{sets_b}"
@@ -482,7 +586,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ biographies")
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
         return
         
     match_score = dict(previous_match_score)
@@ -490,6 +594,7 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     previous_match_score = None
     previous_player_stats = None
+    save_state()
             
     await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
@@ -562,6 +667,7 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(msg)
         return
     selected_court_key = args[0]
+    save_state()
     
     court_name = courts_database[selected_court_key]['name']
     court_link = courts_database[selected_court_key]['link']
@@ -579,6 +685,7 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not args or args[0] not in times_database:
         await update.message.reply_text("❌ របៀបប្រើ៖ វាយ `/settime [លេខកូដ]` ដើម្បីជ្រើសរើសម៉ោងប្រគួត៖\n\n"); return
     selected_time_key = args[0]
+    save_state()
     
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
@@ -621,13 +728,19 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
+# ==========================================
+# ៦. MAIN FUNCTION
+# ==========================================
 def main() -> None:
     token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
     
-    # 🚀 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធបន្លំ Server បោក Render
+    # 🔄 Load ទិន្នន័យចាស់មកវិញស្វ័យប្រវត្តិ (ពី Upstash Redis ឬ Local State Backup)
+    load_state()
+    
+    # 🚀 ចាប់ផ្ដើម Fake Server សម្រាប់ Render
     threading.Thread(target=start_fake_server, daemon=True).start()
     
-    # 🕒 ចាប់ផ្ដើមដំណើរការប្រព័ន្ធ Background Smart Auto-Reset (ផ្ទៀងផ្ទាត់ការចាប់គូប្រកួត)
+    # 🕒 ចាប់ផ្ដើម Background Cron Job ម៉ោង 00:00 យប់ (កម្ពុជា)
     threading.Thread(target=run_midnight_cronjob, daemon=True).start()
     
     app = ApplicationBuilder().token(token).build()
@@ -648,7 +761,7 @@ def main() -> None:
     app.add_handler(CommandHandler("testmode", testmode_command))
     app.add_handler(CommandHandler("match", match_command))
     
-    print("Bot started polling successfully with advanced manual support...")
+    print("Bot started polling with Dual-Layer Persistence System...")
     app.run_polling()
 
 if __name__ == "__main__":
