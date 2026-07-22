@@ -200,7 +200,53 @@ def run_midnight_cronjob():
             print("🕒 [CRON JOB] Midnight Auto-Reset skipped (Advanced match exists).")
 
 # ==========================================
-# ៥. COMMAND HANDLERS
+# ៥. HELPER FUNCTION សម្រាប់បង្កើតសារវត្តមាន
+# ==========================================
+def build_attendance_message(header_txt=""):
+    now_kh = datetime.datetime.now(ICT)
+    date_str = now_kh.strftime("%d/%m/%Y")
+    
+    reply_msg = ""
+    if header_txt:
+        reply_msg += f"{header_txt}\n"
+        
+    reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n" \
+                f"⏰ <b>ម៉ោងប្រកួត៖</b> 6:30PM - 8:30PM\n"
+                
+    if selected_court_key is not None and selected_court_key in courts_database:
+        court_info = courts_database[selected_court_key]
+        court_name = court_info['name']
+        court_link = court_info['link']
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> {court_name} [✅ កក់តារាងរួចរាល់]\n"
+        if court_link != "មិនទាន់មាន":
+            reply_msg += f"🔗 <b>លីង Map៖</b> <a href='{court_link}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n\n"
+        else:
+            reply_msg += f"🔗 <b>លីង Map៖</b> <code>មិនទាន់មាន</code>\n\n"
+    else:
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> 🟡 [មិនទាន់កក់តារាង]\n\n"
+                
+    if today_players:
+        for idx, player in enumerate(today_players, start=1):
+            reply_msg += f"{idx}. {player}\n"
+    else:
+        reply_msg += "<i>មិនទាន់មានសមាជិកចុះឈ្មោះផ្លូវការនៅឡើយទេ</i>\n"
+        
+    if waiting_list:
+        reply_msg += "\n⏳ <b>បញ្ជីកីឡាករបម្រុង៖</b>\n"
+        for idx, player in enumerate(waiting_list, start=1):
+            reply_msg += f"{idx}. {player}\n"
+
+    reply_msg += "\n<code>• • • • • • • • • • • • • •</code>\n" \
+                 "💡 <b>ការណែនាំ៖</b>\n" \
+                 "• ចូលរួមប្រគួតដោយគ្រាន់តែវាយ /join ជាការស្រេចសម្រាប់សមាជិកដែលមានឈ្មោះនៅក្នុងគ្រុប Telegram\n" \
+                 "• សម្រាប់ចុះឈ្មោះឱ្យមិត្តភក្តិសូមវាយ /join [ឈ្មោះមិត្តភក្តិ]\n" \
+                 "• ប្រសិនបើមិនបានចូលរួមការប្រគួតសូមវាយ /leave ជាការស្រេចសម្រាប់សមាជិកដែលមានឈ្មោះនៅក្នុងគ្រុប Telegram\n" \
+                 "• សម្រាប់មិត្តភក្តិសូមវាយ /leave [ឈ្មោះមិត្តភក្តិ]"
+                 
+    return reply_msg
+
+# ==========================================
+# ៦. COMMAND HANDLERS
 # ==========================================
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា /join ដើម្បីចុះឈ្មោះចូលរួមប្រគួត! របៀបបញ្ជា៖ វាយ /join\n" \
@@ -258,7 +304,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 break
         
     if matched_name in today_players or matched_name in waiting_list:
-        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ។")
+        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ chart។")
         return
 
     if matched_name not in player_stats: 
@@ -272,41 +318,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         status_txt = f"✅ [{matched_name}] បានចុះឈ្មោះប្រគួតថ្ងៃនេះហើយ。\n(កីឡាករបម្រុង {len(waiting_list)})"
 
     save_state()
-
-    now_kh = datetime.datetime.now(ICT)
-    date_str = now_kh.strftime("%d/%m/%Y")
-    
-    reply_msg = f"{status_txt}\n" \
-                f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n" \
-                f"⏰ <b>ម៉ោងប្រកួត៖</b> 6:30PM - 8:30PM\n"
-                
-    if selected_court_key is not None and selected_court_key in courts_database:
-        court_info = courts_database[selected_court_key]
-        court_name = court_info['name']
-        court_link = court_info['link']
-        reply_msg += f"🏟️ <b>ទីតាំង៖</b> {court_name} [✅ កក់តារាងរួចរាល់]\n"
-        if court_link != "មិនទាន់មាន":
-            reply_msg += f"🔗 <b>លីង Map៖</b> <a href='{court_link}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n\n"
-        else:
-            reply_msg += f"🔗 <b>លីង Map៖</b> <code>មិនទាន់មាន</code>\n\n"
-    else:
-        reply_msg += f"🏟️ <b>ទីតាំង៖</b> 🟡 [មិនទាន់កក់តារាង]\n\n"
-                
-    for idx, player in enumerate(today_players, start=1):
-        reply_msg += f"{idx}. {player}\n"
-        
-    if waiting_list:
-        reply_msg += "\n⏳ <b>បញ្ជីកីឡាករបម្រុង៖</b>\n"
-        for idx, player in enumerate(waiting_list, start=1):
-            reply_msg += f"{idx}. {player}\n"
-
-    reply_msg += "\n<code>• • • • • • • • • • • • • •</code>\n" \
-                 "💡 <b>ការណែនាំ៖</b>\n" \
-                 "• ចូលរួមប្រគួតដោយគ្រាន់តែវាយ /join ជាការស្រេចសម្រាប់សមាជិកដែលមានឈ្មោះនៅក្នុងគ្រុប Telegram\n" \
-                 "• សម្រាប់ចុះឈ្មោះឱ្យមិត្តភក្តិសូមវាយ /join [ឈ្មោះមិត្តភក្តិ]\n" \
-                 "• ប្រសិនបើមិនបានចូលរួមការប្រគួតសូមវាយ /leave ជាការស្រេចសម្រាប់សមាជិកដែលមានឈ្មោះនៅក្នុងគ្រុប Telegram\n" \
-                 "• សម្រាប់មិត្តភក្តិសូមវាយ /leave [ឈ្មោះមិត្តភក្តិ]"
-
+    reply_msg = build_attendance_message(status_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML")
 
 async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -354,21 +366,15 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(f"💡 រកមិនឃើញឈ្មោះ [{matched_name}] ក្នុងបញ្ជីវត្តមានថ្ងៃនេះទេ។")
 
+# 🛠️ UPDATED: បង្ហាញដូច /join ទាំងស្រុង 🌟
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not today_players:
+    if not today_players and not waiting_list:
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
         return
         
-    msg = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)} នាក់)\n<code>• • • • • • • • • • • • • •</code>\n"
-    for idx, player in enumerate(today_players, start=1):
-        msg += f"{idx}. {player}\n"
-        
-    if waiting_list:
-        msg += f"\n⏳ បញ្ជីកីឡាករបម្រុង ({len(waiting_list)} នាក់)៖\n<code>• • • • • • • • • • • • • •</code>\n"
-        for idx, player in enumerate(waiting_list, start=1):
-            msg += f"{idx}. {player}\n"
-            
-    await update.message.reply_text(msg, parse_mode="HTML")
+    header_txt = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) - 📋"
+    reply_msg = build_attendance_message(header_txt)
+    await update.message.reply_text(reply_msg, parse_mode="HTML")
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
@@ -762,7 +768,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
 # ==========================================
-# ៦. MAIN FUNCTION
+# ៧. MAIN FUNCTION
 # ==========================================
 def main() -> None:
     token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
@@ -794,7 +800,7 @@ def main() -> None:
     app.add_handler(CommandHandler("testmode", testmode_command))
     app.add_handler(CommandHandler("match", match_command))
     
-    print("Bot started polling with Syntax Cleaned & Join Location Link support...")
+    print("Bot started polling with Unified List & Join format...")
     app.run_polling()
 
 if __name__ == "__main__":
