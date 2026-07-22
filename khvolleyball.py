@@ -177,7 +177,7 @@ def load_state():
 # ៤. SMART Auto-Reset (ម៉ោង 00:00 យប់នៅកម្ពុជា)
 # ==========================================
 def run_midnight_cronjob():
-    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
+    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, selected_time_key, player_stats
     while True:
         now = datetime.datetime.now(ICT)
         tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min, tzinfo=ICT)
@@ -193,6 +193,7 @@ def run_midnight_cronjob():
             current_teams = {"team_a": [], "team_b": []}
             match_score = {"a": 0, "b": 0}
             selected_court_key = None
+            selected_time_key = "1"
             player_stats = {}
             save_state()
             print("🕒 [CRON JOB] Midnight Auto-Reset executed at 00:00 Cambodia Time (ICT).")
@@ -200,30 +201,33 @@ def run_midnight_cronjob():
             print("🕒 [CRON JOB] Midnight Auto-Reset skipped (Advanced match exists).")
 
 # ==========================================
-# ៥. HELPER FUNCTION សម្រាប់បង្កើតសារវត្តមាន (តម្រៀបលេខរៀងចុះក្រោម) 🌟
+# ៥. HELPER FUNCTION សម្រាប់បង្កើតសារវត្តមាន (Dynamic Time + Fixed Typo) 🌟
 # ==========================================
 def build_attendance_message(header_txt=""):
     now_kh = datetime.datetime.now(ICT)
     date_str = now_kh.strftime("%d/%m/%Y")
+    
+    # ផ្លាស់ប្ដូរម៉ោងតាម Dynamic Key ដែលបានជ្រើសរើស
+    current_time_str = times_database.get(selected_time_key, times_database["1"])
     
     reply_msg = ""
     if header_txt:
         reply_msg += f"{header_txt}\n\n"
         
     reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n" \
-                 f"⏰ <b>ម៉ោងប្រកួត៖</b> 6:30PM - 8:30PM\n"
+                 f"⏰ <b>ម៉ោងប្រកួត៖</b> {current_time_str}\n"
                 
     if selected_court_key is not None and selected_court_key in courts_database:
         court_info = courts_database[selected_court_key]
         court_name = court_info['name']
         court_link = court_info['link']
-        reply_msg += f"🏟️ <b>ទីតាំង៖</b> {court_name} ✅[កក់តារាងរួចរាល់]\n"
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> {court_name} [✅ កក់តារាងរួចរាល់]\n"
         if court_link != "មិនទាន់មាន":
             reply_msg += f"🔗 <b>លីង Map៖</b> <a href='{court_link}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n\n"
         else:
             reply_msg += f"🔗 <b>លីង Map៖</b> <code>មិនទាន់មាន</code>\n\n"
     else:
-        reply_msg += f"🏟️ <b>ទីតាំង៖</b> 🟡[មិនទាន់កក់តារាង]\n\n"
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> 🟡 [មិនទាន់កក់តារាង]\n\n"
                 
     if today_players:
         for idx, player in enumerate(today_players, start=1):
@@ -304,7 +308,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 break
         
     if matched_name in today_players or matched_name in waiting_list:
-        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ chart。")
+        await update.message.reply_text(f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ។")
         return
 
     if matched_name not in player_stats: 
@@ -372,12 +376,12 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ដើម្បីចុះឈ្មោះ!")
         return
         
-    header_txt = f"📋 បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់)"
+    header_txt = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) - 📋"
     reply_msg = build_attendance_message(header_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML")
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
+    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, selected_time_key, player_stats
     today_players = []
     waiting_list = []
     previous_match_score = None
@@ -385,17 +389,19 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_teams = {"team_a": [], "team_b": []}
     match_score = {"a": 0, "b": 0}
     selected_court_key = None
+    selected_time_key = "1"
     player_stats = {}
     save_state()
     await update.message.reply_text("♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global match_score, previous_match_score, previous_player_stats, player_stats, selected_court_key
+    global match_score, previous_match_score, previous_player_stats, player_stats, selected_court_key, selected_time_key
     match_score = {"a": 0, "b": 0}
     previous_match_score = None
     previous_player_stats = None
     player_stats = {}
     selected_court_key = None
+    selected_time_key = "1"
     
     for p in today_players:
         player_stats[p] = {"win": 0, "loss": 0}
@@ -643,7 +649,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     total_sets_played = match_score["a"] + match_score["b"]
         
-    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n<code>• • • • • • • • • • • • • •</code>\n"
+    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n<code>• • • • • • • • • • • • • •</code>\n"
     
     sorted_stats = sorted(player_stats.items(), key=lambda x: x[1]["win"], reverse=True)
     for name, stat in sorted_stats: 
@@ -711,9 +717,9 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     court_link = courts_database[selected_court_key]['link']
     
     if court_link != "មិនទាន់មាន":
-        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅[កក់តារាងរួចរាល់]\n🔗 លីង Map៖ <a href='{court_link}'>{court_name}</a>"
+        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n[✅ កក់តារាងរួចរាល់]\n🔗 លីង Map៖ <a href='{court_link}'>{court_name}</a>"
     else:
-        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n✅[កក់តារាងរួចរាល់]\n🔗 លីង Map៖ <code>មិនទាន់មាន</code>"
+        status_msg = f"📢 [ប្រកាស] បានជ្រើសរើសយក៖\n🏟️ {court_name} ជោគជ័យ!\n[✅ កក់តារាងរួចរាល់]\n🔗 លីង Map៖ <code>មិនទាន់មាន</code>"
         
     await update.message.reply_text(status_msg, parse_mode="HTML")
 
@@ -721,7 +727,10 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_time_key
     args = context.args
     if not args or args[0] not in times_database:
-        await update.message.reply_text("❌ របៀបប្រើ៖ វាយ `/settime [លេខកូដ]` ដើម្បីជ្រើសរើសម៉ោងប្រគួត៖\n\n")
+        msg = "❌ របៀបប្រើ៖ វាយ /settime [លេខកូដ] ដើម្បីជ្រើសរើសម៉ោងប្រគួត៖\n\n"
+        for key, time_val in times_database.items():
+            msg += f"👉 /settime {key} ➡️ {time_val}\n"
+        await update.message.reply_text(msg)
         return
     selected_time_key = args[0]
     save_state()
@@ -800,7 +809,7 @@ def main() -> None:
     app.add_handler(CommandHandler("testmode", testmode_command))
     app.add_handler(CommandHandler("match", match_command))
     
-    print("Bot started polling with Numbered Vertical Players List format...")
+    print("Bot started polling with Dynamic Time & Clean Syntax...")
     app.run_polling()
 
 if __name__ == "__main__":
