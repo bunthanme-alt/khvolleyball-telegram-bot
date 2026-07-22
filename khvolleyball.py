@@ -209,7 +209,8 @@ async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, player_stats
-    today_players = []; waiting_list = []
+    today_players = []
+    waiting_list = []
     args = context.args
     all_keys = list(players_data.keys())
     total_to_add = len(all_keys)
@@ -234,7 +235,6 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = f"[Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់"
     await update.message.reply_text(msg)
 
-# 🛠️ UPDATED: បង្ហាញព័ត៌មានកក់តារាង + Link Map ក្នុង Join Message 🌟
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, player_stats
     args = context.args
@@ -280,7 +280,6 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n" \
                 f"⏰ <b>ម៉ោងប្រកួត៖</b> 6:30PM - 8:30PM\n"
                 
-    # ពិនិត្យមើលថាតើ Admin បាន /setmap កក់តារាងរួចហើយឬនៅ 🌟
     if selected_court_key is not None and selected_court_key in courts_database:
         court_info = courts_database[selected_court_key]
         court_name = court_info['name']
@@ -373,8 +372,12 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, player_stats
-    today_players = []; waiting_list = []; previous_match_score = None; previous_player_stats = None
-    current_teams = {"team_a": [], "team_b": []}; match_score = {"a": 0, "b": 0}
+    today_players = []
+    waiting_list = []
+    previous_match_score = None
+    previous_player_stats = None
+    current_teams = {"team_a": [], "team_b": []}
+    match_score = {"a": 0, "b": 0}
     selected_court_key = None
     player_stats = {}
     save_state()
@@ -419,8 +422,81 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     level_3 = [p for p in remaining_players if players_data.get(p, 1) == 3]
     level_2 = [p for p in remaining_players if players_data.get(p, 1) == 2]
     level_1 = [p for p in remaining_players if players_data.get(p, 1) == 1 or p not in players_data]
-    random.shuffle(level_3); random.shuffle(level_2); random.shuffle(level_1)
+    random.shuffle(level_3)
+    random.shuffle(level_2)
+    random.shuffle(level_1)
     
     def get_player_weight(p):
         val = players_data.get(p, 1)
-        return 0 if val == "setter"
+        return 0 if val == "setter" else int(val)
+
+    def distribute_pool(player_list):
+        for p in player_list:
+            is_left = p in left_spikers_list
+            count_left_a = sum(1 for x in team_a if x in left_spikers_list)
+            count_left_b = sum(1 for x in team_b if x in left_spikers_list)
+            weight_a = sum(get_player_weight(x) for x in team_a)
+            weight_b = sum(get_player_weight(x) for x in team_b)
+            
+            if is_left:
+                if count_left_a < count_left_b and len(team_a) < size_a:
+                    team_a.append(p)
+                elif count_left_b < count_left_a and len(team_b) < size_b:
+                    team_b.append(p)
+                else:
+                    if weight_a <= weight_b and len(team_a) < size_a: team_a.append(p)
+                    elif len(team_b) < size_b: team_b.append(p)
+                    else:
+                        if len(team_a) < size_a: team_a.append(p)
+                        else: team_b.append(p)
+            else:
+                if len(team_a) < size_a and len(team_b) < size_b:
+                    if weight_a < weight_b: team_a.append(p)
+                    elif weight_b < weight_a: team_b.append(p)
+                    else:
+                        if len(team_a) <= len(team_b): team_a.append(p)
+                        else: team_b.append(p)
+                elif len(team_a) < size_a:
+                    team_a.append(p)
+                elif len(team_b) < size_b: 
+                    team_b.append(p)
+                    
+    distribute_pool(level_3)
+    distribute_pool(level_2)
+    distribute_pool(level_1)
+    current_teams = {"team_a": team_a, "team_b": team_b}
+    save_state()
+    
+    def format_player_name(p):
+        tags = []
+        if players_data.get(p) == "setter": tags.append("ប៉ះសេហ្ស៊ីន")
+        if p in left_spikers_list: tags.append("ឆ្វេងហ្ស៊ីន")
+        return f"{p}({','.join(tags)})" if tags else p
+        
+    format_a = [format_player_name(p) for p in team_a]
+    format_b = [format_player_name(p) for p in team_b]
+        
+    msg = f"🏐 - លទ្ធផលចាប់គូស្វ័យប្រវត្តថ្ងៃនេះ ({len(team_a)} ទល់ {len(team_b)}) - 🏐\n\n" \
+          f"🔹 <b>ក្រុម A:</b> {', '.join(format_a)}\n" \
+          f"<code>▬ ▬ ▬ Vs ▬ ▬ ▬</code>\n" \
+          f"🔸 <b>ក្រុម B:</b> {', '.join(format_b)}\n\n" \
+          f"📢 លេងចប់គ្រប់សិត វាយបញ្ជាបញ្ចូលពិន្ទុតែមួយដងគត់ Ex: <code>/setscore 2 1</code>"
+    await update.message.reply_text(msg, parse_mode="HTML")
+
+async def manual_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global current_teams, player_stats, match_score, today_players, waiting_list
+    args = context.args
+    
+    raw_text = " ".join(args).replace("[", "").replace("]", "")
+    splitters = [" vs ", " v ", " vS ", " Vs ", " VS "]
+    v_sign = None
+    for s in splitters:
+        if s in f" {raw_text} ":
+            v_sign = s
+            break
+            
+    if not args or not v_sign:
+        await update.message.reply_text("❌ របៀបប្រើ៖ /manual [ក្រុមA] v [ក្រុមB]")
+        return
+        
+    try
