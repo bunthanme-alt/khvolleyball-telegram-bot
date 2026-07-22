@@ -1,13 +1,3 @@
-បាទបង! យោងតាមផ្ទាំង Log Error នេះ គឺដោយសារតែមានកំហុស **Syntax error** ពីរចំណុចពេល Copy/Paste កូដដាច់បន្ទាត់៖
-
-1. **Line 426:** `return 0 if val == "setter"` បាត់ផ្នែក `else int(val)`
-2. **Line 502:** `try` បាត់សញ្ញាចុចពីរ `:`
-
-ខ្ញុំបានកែតម្រូវ និងពិនិត្យផ្ទៀងផ្ទាត់ Syntax នៃកូដទាំងមូលយ៉ាងហ្មត់ចត់ឡើងវិញ ១០០% គ្មានចន្លោះប្រហោងឡើយ។
-
-សូមបង **Copy កូដពេញលេញទាំងស្រុង ខាងក្រោមនេះ** យកទៅ Paste ជំនួសក្នុង File `khvolleyball.py` លើ GitHub របស់បងឡើងវិញបាទ៖
-
-```python
 import random
 import os
 import json
@@ -422,11 +412,15 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     random.shuffle(setters)
     for i, setter in enumerate(setters):
         if i % 2 == 0:
-            if len(team_a) < size_a: team_a.append(setter)
-            else: team_b.append(setter)
+            if len(team_a) < size_a:
+                team_a.append(setter)
+            else:
+                team_b.append(setter)
         else:
-            if len(team_b) < size_b: team_b.append(setter)
-            else: team_a.append(setter)
+            if len(team_b) < size_b:
+                team_b.append(setter)
+            else:
+                team_a.append(setter)
             
     remaining_players = [p for p in today_players if p not in setters]
     level_3 = [p for p in remaining_players if players_data.get(p, 1) == 3]
@@ -438,7 +432,9 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     def get_player_weight(p):
         val = players_data.get(p, 1)
-        return 0 if val == "setter" else int(val)
+        if val == "setter":
+            return 0
+        return int(val)
 
     def distribute_pool(player_list):
         for p in player_list:
@@ -487,8 +483,10 @@ async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     def format_player_name(p):
         tags = []
-        if players_data.get(p) == "setter": tags.append("ប៉ះសេហ្ស៊ីន")
-        if p in left_spikers_list: tags.append("ឆ្វេងហ្ស៊ីន")
+        if players_data.get(p) == "setter":
+            tags.append("ប៉ះសេហ្ស៊ីន")
+        if p in left_spikers_list:
+            tags.append("ឆ្វេងហ្ស៊ីន")
         return f"{p}({','.join(tags)})" if tags else p
         
     format_a = [format_player_name(p) for p in team_a]
@@ -801,5 +799,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-```
