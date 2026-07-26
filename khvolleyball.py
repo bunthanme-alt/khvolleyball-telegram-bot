@@ -788,7 +788,7 @@ async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 # ==========================================
-# ៨. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
+# ៨. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុចជាមួយ Pop-up Alert គ្រប់ជម្រើស) 🌟
 # ==========================================
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -804,9 +804,11 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     if data == "btn_join_self":
         p_name, status_txt = process_user_join(user_name)
         if p_name is None:
-            await query.answer(status_txt, show_alert=True)
+            # 🌟 លោត Pop-up ប្រាប់ប្រសិនបើមានឈ្មោះរួចហើយ
+            await query.answer(f"💡 ឈ្មោះ [{user_name}] មានក្នុងបញ្ជីរួចហើយបាទ!", show_alert=True)
             return
-        await query.answer("✅ អ្នកបានចុះឈ្មោះប្រកួតជោគជ័យ!", show_alert=False)
+        # 🌟 លោត Pop-up ប្រាប់ពេល Join ជោគជ័យ
+        await query.answer(f"✅ [{user_name}] ចុះឈ្មោះប្រកួតជោគជ័យ!", show_alert=True)
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
@@ -814,26 +816,28 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     elif data == "btn_leave_self":
         success, status_txt = process_user_leave(user_name)
         if not success:
-            await query.answer(status_txt, show_alert=True)
+            # 🌟 លោត Pop-up ប្រាប់ប្រសិនបើគ្មានឈ្មោះក្នុងបញ្ជី
+            await query.answer(f"💡 រកមិនឃើញឈ្មោះ [{user_name}] ក្នុងបញ្ជីវត្តមានទេ!", show_alert=True)
             return
-        await query.answer("❌ បានដកឈ្មោះចេញពីបញ្ជីវត្តមាន!", show_alert=False)
+        # 🌟 លោត Pop-up ប្រាប់ពេល Leave ជោគជ័យ
+        await query.answer(f"❌ បានដកឈ្មោះ [{user_name}] ចេញពីរវត្តមានរួចរាល់!", show_alert=True)
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
     # ៣. ចុច Join មិត្តភក្តិ
     elif data == "btn_join_friend":
-        await query.answer()
+        await query.answer("✍️ សូម Reply វាយឈ្មោះមិត្តភក្តិរបស់អ្នក!", show_alert=False)
         pending_friend_join[user_id] = True
         await query.message.reply_text("✍️ សូម Reply វាយឈ្មោះមិត្តភក្តិរបស់អ្នក (ឧទាហរណ៍៖ សុខា) ផ្ញើចូលគ្រុប៖")
 
-    # ៤. ចុច Leave មិត្តភក្តិ (ប្រើ Index សុវត្ថិភាព rf_{idx})
+    # ៤. ចុច Leave មិត្តភក្តិ
     elif data == "btn_leave_friend":
-        await query.answer()
         all_active = today_players + waiting_list
         if not all_active:
             await query.answer("💡 មិនទាន់មានសមាជិកក្នុងបញ្ជីវត្តមាននៅឡើយទេ!", show_alert=True)
             return
             
+        await query.answer("➖ សូមជ្រើសរើសឈ្មោះមិត្តភក្តិដើម្បីដកចេញ!", show_alert=False)
         remove_keyboard = []
         for idx, player in enumerate(all_active):
             remove_keyboard.append([InlineKeyboardButton(f"➖ {idx+1}. {player}", callback_data=f"rf_{idx}")])
@@ -847,25 +851,27 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     # ៥. ដកឈ្មោះមិត្តភក្តិដែលបានជ្រើសរើសតាម Index
     elif data.startswith("rf_"):
-        await query.answer()
         try:
             idx = int(data.split("_")[1])
             all_active = today_players + waiting_list
             if 0 <= idx < len(all_active):
                 target_name = all_active[idx]
                 success, status_txt = process_user_leave(target_name)
+                await query.answer(f"❌ បានដកឈ្មោះ [{target_name}] រួចរាល់!", show_alert=True)
                 reply_msg = build_attendance_message(status_txt)
                 await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
             else:
+                await query.answer("💡 រកមិនឃើញទិន្នន័យឈ្មោះឡើយ!", show_alert=True)
                 reply_msg = build_attendance_message()
                 await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
         except Exception:
+            await query.answer("💡 មានបញ្ហាក្នុងការដកឈ្មោះ!", show_alert=True)
             reply_msg = build_attendance_message()
             await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៦. ចុច Menu ម៉ោង (callback_data ខ្លី សុវត្ថិភាព ១០០%)
+    # ៦. ចុច Menu ម៉ោង
     elif data == "menu_time":
-        await query.answer()
+        await query.answer("⏰ សូមជ្រើសរើសម៉ោងប្រកួត!", show_alert=False)
         time_keyboard = []
         row = []
         for key, val in times_database.items():
@@ -886,18 +892,18 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     # ៧. ចុច ដូរម៉ោង
     elif data.startswith("settime_"):
-        await query.answer()
         time_key = data.split("_")[1]
         selected_time_key = time_key
         save_state()
         time_txt = times_database[selected_time_key]
+        await query.answer(f"⏰ បានជ្រើសរើសម៉ោង៖ {time_txt}!", show_alert=True)
         status_txt = f"⏰ បានជ្រើសរើសម៉ោងប្រកួត៖ {time_txt} ដោយជោគជ័យ!"
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
     # ៨. ចុច Menu តារាង
     elif data == "menu_court":
-        await query.answer()
+        await query.answer("🏟️ សូមជ្រើសរើសតារាងប្រកួត!", show_alert=False)
         court_keyboard = []
         for key, court in courts_database.items():
             court_keyboard.append([InlineKeyboardButton(f"🏟️ {court['name']}", callback_data=f"setcourt_{key}")])
@@ -911,18 +917,18 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     # ៩. ចុច កក់តារាង
     elif data.startswith("setcourt_"):
-        await query.answer()
         court_key = data.split("_")[1]
         selected_court_key = court_key
         save_state()
         court_name = courts_database[selected_court_key]['name']
+        await query.answer(f"🏟️ បានជ្រើសរើសយក៖ {court_name}!", show_alert=True)
         status_txt = f"🏟️ បានជ្រើសរើសយក៖ {court_name} [✅ កក់តារាងរួចរាល់]"
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
     # ១០. ចុច ត្រឡប់ក្រោយ
     elif data == "menu_back":
-        await query.answer()
+        await query.answer("🔙 ត្រឡប់មកផ្ទាំងដើមវិញ!", show_alert=False)
         reply_msg = build_attendance_message()
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
@@ -964,7 +970,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling smoothly without syntax errors...")
+    print("Bot started polling with Pop-up Alerts on all button interactions...")
     app.run_polling()
 
 if __name__ == "__main__":
