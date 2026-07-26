@@ -221,23 +221,24 @@ def build_attendance_message(header_txt=""):
     now_kh = datetime.datetime.now(ICT)
     date_str = now_kh.strftime("%d/%m/%Y")
     
-    if selected_time_key is not None and selected_time_key in times_database:
-        current_time_str = f"<code> {times_database[selected_time_key]} </code> 🟢 [កំណត់រួចរាល់]"
-    else:
-        current_time_str = "🟡 [មិនទាន់ជ្រើសរើសម៉ោង]"
-    
     reply_msg = ""
     if header_txt:
         reply_msg += f"{header_txt}\n\n"
         
-    reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n" \
-                 f"⏰ <b>ម៉ោងប្រកួត៖</b> {current_time_str}\n"
+    reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n"
+
+    # 🌟 តម្រៀបម៉ោងចុះក្រោមស្អាតបាត
+    if selected_time_key is not None and selected_time_key in times_database:
+        reply_msg += f"⏰ <b>ម៉ោងប្រកួត៖</b> <code> {times_database[selected_time_key]} </code>\n🟢 [កំណត់រួចរាល់]\n"
+    else:
+        reply_msg += "⏰ <b>ម៉ោងប្រកួត៖</b> 🟡 [មិនទាន់ជ្រើសរើសម៉ោង]\n"
                 
+    # 🌟 តម្រៀបតារាងចុះក្រោមស្អាតបាត
     if selected_court_key is not None and selected_court_key in courts_database:
         court_info = courts_database[selected_court_key]
         court_name = court_info['name']
         court_link = court_info['link']
-        reply_msg += f"🏟️ <b>ទីតាំង៖</b> <code> {court_name} </code> 🟢 [កក់តារាងរួចរាល់]\n"
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> <code> {court_name} </code>\n🟢 [កក់តារាងរួចរាល់]\n"
         if court_link != "មិនទាន់មាន":
             reply_msg += f"🔗 <b>លីង Map៖</b> <a href='{court_link}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n\n"
         else:
@@ -256,7 +257,8 @@ def build_attendance_message(header_txt=""):
         for idx, player in enumerate(waiting_list, start=1):
             reply_msg += f"{idx}. {player}\n"
 
-    reply_msg += "\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n" \
+    # 🌟 សញ្ញាខណ្ឌស្មើចំកណ្តាល
+    reply_msg += "\n<code>       • • • • • • • • • • • • • •       </code>\n" \
                  "💡 <b>ការណែនាំ៖</b> ចុចប៊ូតុងខាងក្រោមដើម្បីប្រតិបត្តិការភ្លាមៗ!"
                  
     return reply_msg
@@ -375,8 +377,9 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_msg = build_attendance_message(header_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
+# 🌟 មុខងារ /match (ដកសញ្ញា 🏐🔥 ចេញរួចរាល់)
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ! 🏐🔥"
+    header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ!"
     reply_msg = build_attendance_message(header_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
@@ -671,7 +674,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
         
     total_sets_played = match_score["a"] + match_score["b"]
-    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n"
+    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n<code>       • • • • • • • • • • • • • •       </code>\n"
     
     sorted_stats = sorted(player_stats.items(), key=lambda x: x[1]["win"], reverse=True)
     for name, stat in sorted_stats: 
@@ -768,7 +771,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         play_time_info = times_database[selected_time_key]
         info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    info_msg += "<code>━━━━━━━━━━━━━━━━━━━━━━\n" \
+    info_msg += "<code>       • • • • • • • • • • • • • •       \n" \
                 "      🏟️  ទីតាំងតារាងបាល់ទះ  🏟️      \n\n</code>"
                
     total_courts = len(courts_database)
@@ -792,14 +795,14 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
         
         if i < total_courts: 
-            info_msg += "<code>━━━━━━━━━━━━━━━━━━━━━━\n</code>"
+            info_msg += "<code>       • • • • • • • • • • • • • •       \n</code>"
             
     info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
     
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
 # ==========================================
-# ៨. MESSAGE HANDLER សម្រាប់ REPLIES (JOIN ឱ្យមិត្ត) 🌟
+# ៨. MESSAGE HANDLER សម្រាប់ REPLIES (JOIN ឱ្យមិត្ត)
 # ==========================================
 async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
@@ -816,7 +819,7 @@ async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 # ==========================================
-# ៩. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច) 🌟
+# ៩. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
 # ==========================================
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -969,7 +972,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with Clean Syntax & Fixed Errors...")
+    print("Bot started polling with updated clean layout...")
     app.run_polling()
 
 if __name__ == "__main__":
