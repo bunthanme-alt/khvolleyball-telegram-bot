@@ -71,12 +71,105 @@ previous_match_score = None
 previous_player_stats = None  
 
 courts_database = {
-    "1": {"name": "តារាងបាល់ទះ (សាំហាន់)", "link": "មិនទាន់មាន"},
+    "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "មិនទាន់មាន"},
     "2": {"name": "តារាងបាល់ទះ (សែនសុខ)", "link": "https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic"},
     "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc"}
 }
 
-# 🌟 អាប់ដេតបញ្ជីម៉ោងប្រកួតថ្មី
+times_database = {
+    "1": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
+    "2": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
+    "3": "៦:០០ យប់ ដល់ ៨:០០ យប់",
+    "4": "៦:
+បាទបង! ខ្ញុំបានអាប់ដេតកូដជូនបងស្របតាមសំណើទាំង ៣ ចំណុច៖
+
+1. **មុខងារ `/match` ៖** បានបន្ថែមប៊ូតុងចុច (Inline Keyboard Buttons) នៅខាងក្រោមសារបញ្ជាក់ប្រកួត ដូចគ្នានឹង `/join` និង `/list` ដែរ។
+2. **ការបង្ហាញម៉ោង និងទីតាំងតារាងឱ្យលេចធ្លោ 🟢៖** នៅពេលជ្រើសរើសរួច ព័ត៌មានម៉ោង និងតារាង នឹងត្រូវបង្ហាញជាអក្សរដិតស្អាតក្នុងប្រអប់ Highlight (`<code>...</code>`) រមាស និងសញ្ញា **🟢 [កំណត់រួចរាល់]** ឬ **🟢 [កក់តារាងរួចរាល់]** មើលទៅច្បាស់ៗ មិនងាយច្រឡំឡើយ។
+3. **តម្រឹមសញ្ញាខណ្ឌឲ្យចំកណ្តាល ១០០% លើទូរស័ព្ទ 📱៖** បានប្តូរមកប្រើសញ្ញារលកស្អាត `<code>━━━━━━━━━━━━━━━━━━━━━━</code>` ដែលរត់ពេញប្រអប់ទូរស័ព្ទគ្រប់ទំហំអេក្រង់ (iOS/Android) មើលទៅមានរបៀបរៀបរយ និងចំកណ្តាលស្មើគ្នាល្អឥតខ្ចោះ។
+
+---
+
+សូមបង Copy កូដពេញលេញចុងក្រោយបង្អស់ខាងក្រោមនេះ យកទៅជំនួសក្នុង File `khvolleyball.py` លើ GitHub របស់បងបាទ៖
+
+```python
+import random
+import os
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+import datetime
+import time
+import requests
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+
+# ==========================================
+# ១. ប្រព័ន្ធបន្លំ Server សម្រាប់ Render
+# ==========================================
+class FakeServer(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Bot is Alive 24/7!")
+        
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+
+def start_fake_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), FakeServer)
+    print(f"Fake Server running on port {port}...")
+    server.serve_forever()
+
+# ==========================================
+# ២. DATABASE កីឡាករផ្លូវការ និងការកំណត់ Timezone
+# ==========================================
+players_data = {
+    "Yeun": "setter",
+    "BOY": "setter",
+    "VI SAL": "setter",
+    "Thorn Samay": 3,
+    "Phirom YEM": 3,
+    "Phatdon": 3,
+    "Thinhhhh (Wick)": 3,
+    "Sila Soem": 2,
+    "mean chaomey": 2,
+    "Suyngorn": 2,
+    "៤៣.ចេន រដ្ឋនី គ២": 2,
+    "Kong Channborey (គង់ ច័ន្ទបុរី)": 2,
+    "Mang Thona": 2,
+    "Lxy": 2,
+    "Aok Lyhour": 2,
+    "𝐌ρη-𝐖𝐚𝐧🇰🇭": 2,
+    "Khorn Salit": 2,
+    "ផល មិនា🇰🇭": 2,
+    "Em Bunthan": 2,
+    "LAY": 1,
+    "ផល បញ្ញា(Phal Banha)": 1,
+    "Seng Ngonn": 1,
+    "Vanna Poy": 1,
+    "Khai Titi(Libero)": 1
+}
+
+left_spikers_list = ["Bunthan(Sky)", "Lyhour", "Lxy", "Salit", "Aok Lyhour", "Khorn Salit", "Em Bunthan"]
+today_players = []
+waiting_list = []  
+current_teams = {"team_a": [], "team_b": []}
+player_stats = {}
+match_score = {"a": 0, "b": 0}
+
+previous_match_score = None  
+previous_player_stats = None  
+
+courts_database = {
+    "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "មិនទាន់មាន"},
+    "2": {"name": "តារាងបាល់ទះ (សែនសុខ)", "link": "[https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic](https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic)"},
+    "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "[https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc](https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc)"}
+}
+
 times_database = {
     "1": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
     "2": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
@@ -90,8 +183,8 @@ times_database = {
 }
 
 selected_court_key = None
-selected_time_key = None  # 🌟 តម្លៃដើមមិនទាន់ជ្រើសរើសម៉ោង
-pending_friend_join = {}  # សម្រាប់ស្ដាប់ Reply ចុះឈ្មោះឱ្យមិត្ត
+selected_time_key = None  
+pending_friend_join = {}  
 ICT = datetime.timezone(datetime.timedelta(hours=7))
 
 def has_khmer(text):
@@ -222,9 +315,9 @@ def build_attendance_message(header_txt=""):
     now_kh = datetime.datetime.now(ICT)
     date_str = now_kh.strftime("%d/%m/%Y")
     
-    # 🌟 លក្ខខណ្ឌបង្ហាញម៉ោងប្រកួត
+    # 🌟 លក្ខខណ្ឌបង្ហាញម៉ោងប្រកួតឱ្យលេចធ្លោច្បាស់
     if selected_time_key is not None and selected_time_key in times_database:
-        current_time_str = f"{times_database[selected_time_key]} [✅ កំណត់រួចរាល់]"
+        current_time_str = f"<code> {times_database[selected_time_key]} </code> 🟢 [កំណត់រួចរាល់]"
     else:
         current_time_str = "🟡 [មិនទាន់ជ្រើសរើសម៉ោង]"
     
@@ -235,11 +328,12 @@ def build_attendance_message(header_txt=""):
     reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n" \
                  f"⏰ <b>ម៉ោងប្រកួត៖</b> {current_time_str}\n"
                 
+    # 🌟 លក្ខខណ្ឌបង្ហាញទីតាំងតារាងឱ្យលេចធ្លោច្បាស់
     if selected_court_key is not None and selected_court_key in courts_database:
         court_info = courts_database[selected_court_key]
         court_name = court_info['name']
         court_link = court_info['link']
-        reply_msg += f"🏟️ <b>ទីតាំង៖</b> {court_name} [✅ កក់តារាងរួចរាល់]\n"
+        reply_msg += f"🏟️ <b>ទីតាំង៖</b> <code> {court_name} </code> 🟢 [កក់តារាងរួចរាល់]\n"
         if court_link != "មិនទាន់មាន":
             reply_msg += f"🔗 <b>លីង Map៖</b> <a href='{court_link}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n\n"
         else:
@@ -258,8 +352,8 @@ def build_attendance_message(header_txt=""):
         for idx, player in enumerate(waiting_list, start=1):
             reply_msg += f"{idx}. {player}\n"
 
-    # 🌟 សញ្ញាខណ្ឌចំកណ្តាលស្អាតបាត
-    reply_msg += "\n<code>       • • • • • • • • • • • • • •       </code>\n" \
+    # 🌟 សញ្ញាខណ្ឌរលកស្អាត ស្មើចំកណ្តាល ១០០% លើគ្រប់ទូរស័ព្ទដៃ
+    reply_msg += "\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n" \
                  "💡 <b>ការណែនាំ៖</b> ចុចប៊ូតុងខាងក្រោមដើម្បីប្រតិបត្តិការភ្លាមៗ!"
                  
     return reply_msg
@@ -374,14 +468,15 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ឬចុចប៊ូតុង Join!")
         return
         
-    header_txt = f" បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) "
+    header_txt = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) - 📋"
     reply_msg = build_attendance_message(header_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
+# 🌟 មុខងារ /match មានចេញប៊ូតុង Inline Buttons
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់វាយបញ្ជា /join ដើម្បីចុះឈ្មោះចូលរួមប្រគួត! របៀបបញ្ជា៖ វាយ /join\n" \
-          "📌 ប្រសិនបើចុះឈ្មោះអោយមិត្តភ័ក្ក សូមវាយបញ្ជា /join [ឈ្មោះមិត្តភក្តិ]"
-    await update.message.reply_text(msg)
+    header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ! 🏐🔥"
+    reply_msg = build_attendance_message(header_txt)
+    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, player_stats
@@ -622,7 +717,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
         
     total_sets_played = match_score["a"] + match_score["b"]
-    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n<code>• • • • • • • • • • • • • •</code>\n"
+    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n"
     
     sorted_stats = sorted(player_stats.items(), key=lambda x: x[1]["win"], reverse=True)
     for name, stat in sorted_stats: 
@@ -718,7 +813,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         play_time_info = times_database[selected_time_key]
         info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
         
-    info_msg += "<code>       • • • • • • • • • • • • • •       \n" \
+    info_msg += "<code>━━━━━━━━━━━━━━━━━━━━━━\n" \
                 "      🏟️  ទីតាំងតារាងបាល់ទះ  🏟️      \n\n</code>"
                
     total_courts = len(courts_database)
@@ -735,7 +830,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if court['link'] != "មិនទាន់មាន": info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
             else: info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
         
-        if i < total_courts: info_msg += "<code>       • • • • • • • • • • • • • •       \n</code>"
+        if i < total_courts: info_msg += "<code>━━━━━━━━━━━━━━━━━━━━━━\n</code>"
             
     info_msg += "\n💡 <b>លក្ខខណ្ឌ៖</b> ថ្លៃតុងចែកស្មើគ្នា ថ្លៃទឹកសុទ្ធ|ទឹកអំពៅ|ភេសជ្ជៈទាំងអស់ ក្រុមចាញ់ជាអ្នកចេញ"
     
