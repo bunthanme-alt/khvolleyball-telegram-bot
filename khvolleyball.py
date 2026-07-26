@@ -83,6 +83,101 @@ times_database = {
     "4": "៦:០០ យប់ ដល់ ៧:៣០ យប់",
     "5": "៥:០០ យប់ ដល់ ៧:០០ យប់",
     "6": "៥:០០ យប់ ដល់ ៧:៣០ យប់",
+    "7": "៥:៣០ យប់ ដល់ ៧:
+បាទបង! ខ្ញុំបានធ្វើការអាប់ដេតកូដ Python ទាំងមូល ដោយបានកែសម្រួល **ចំណុចទី២** (លុបពាក្យលើស `focus` និងសញ្ញាចុច `。` ចិន ក្នុង `undo_command`) និង **ចំណុចទី៣** (ប្តូរ Emoji ក្នុង `waiting_list` មកប្រើ `⏳` ដើម្បីឱ្យស្មើដៃគ្នានឹង `👤` នៃបញ្ជីកីឡាករផ្លូវការ) [cite: 1]។ 
+
+លើសពីនេះ ខ្ញុំក៏បានជួសជុលបញ្ហា **Telegram Callback Data Limit (64 bytes)** ត្រង់ការដកឈ្មោះមិត្តភក្តិ ដោយប្តូរមកប្រើលេខរៀង (`rf_0`, `rf_1`) ជំនួសឱ្យការផ្ញើឈ្មោះពេញ ដើម្បីការពារកុំឱ្យមានកំហុសពេលឈ្មោះមិត្តភក្តិមានប្រវែងវែង [cite: 1]។
+
+---
+
+សូមបង Copy កូដពេញលេញចុងក្រោយបង្អស់ខាងក្រោមនេះ យកទៅ Paste ជំនួសក្នុង File `khvolleyball.py` លើ GitHub របស់បងបាទ៖
+
+```python
+import random
+import os
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+import datetime
+import time
+import requests
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+
+# ==========================================
+# ១. ប្រព័ន្ធបន្លំ Server សម្រាប់ Render
+# ==========================================
+class FakeServer(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Bot is Alive 24/7!")
+        
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+
+def start_fake_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), FakeServer)
+    print(f"Fake Server running on port {port}...")
+    server.serve_forever()
+
+# ==========================================
+# ២. DATABASE កីឡាករផ្លូវការ និងការកំណត់ Timezone
+# ==========================================
+players_data = {
+    "Yeun": "setter",
+    "BOY": "setter",
+    "VI SAL": "setter",
+    "Thorn Samay": 3,
+    "Phirom YEM": 3,
+    "Phatdon": 3,
+    "Thinhhhh (Wick)": 3,
+    "Sila Soem": 2,
+    "mean chaomey": 2,
+    "Suyngorn": 2,
+    "៤៣.ចេន រដ្ឋនី គ២": 2,
+    "Kong Channborey (គង់ ច័ន្ទបុរី)": 2,
+    "Mang Thona": 2,
+    "Lxy": 2,
+    "Aok Lyhour": 2,
+    "𝐌ρη-𝐖𝐚𝐧🇰🇭": 2,
+    "Khorn Salit": 2,
+    "ផល មិនា🇰🇭": 2,
+    "Em Bunthan": 2,
+    "LAY": 1,
+    "ផល បញ្ញា(Phal Banha)": 1,
+    "Seng Ngonn": 1,
+    "Vanna Poy": 1,
+    "Khai Titi(Libero)": 1
+}
+
+left_spikers_list = ["Bunthan(Sky)", "Lyhour", "Lxy", "Salit", "Aok Lyhour", "Khorn Salit", "Em Bunthan"]
+today_players = []
+waiting_list = []  
+current_teams = {"team_a": [], "team_b": []}
+player_stats = {}
+match_score = {"a": 0, "b": 0}
+
+previous_match_score = None  
+previous_player_stats = None  
+
+courts_database = {
+    "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "មិនទាន់មាន"},
+    "2": {"name": "តារាងបាល់ទះ (សែនសុខ)", "link": "[https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic](https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic)"},
+    "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "[https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc](https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc)"}
+}
+
+times_database = {
+    "1": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
+    "2": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
+    "3": "៦:០០ យប់ ដល់ ៨:០០ យប់",
+    "4": "៦:០០ យប់ ដល់ ៧:៣០ យប់",
+    "5": "៥:០០ យប់ ដល់ ៧:០០ យប់",
+    "6": "៥:០០ យប់ ដល់ ៧:៣០ យប់",
     "7": "៥:៣០ យប់ ដល់ ៧:០០ យប់",
     "8": "៥:៣០ យប់ ដល់ ៧:៣០ យប់",
     "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក/រសៀល)"
@@ -198,7 +293,6 @@ def build_attendance_message(header_txt=""):
     if header_txt:
         reply_msg += f"{header_txt}\n\n"
         
-    # 🌟 Match Info Card (រៀបចំស្អាតបាត)
     reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n"
 
     if selected_time_key is not None and selected_time_key in times_database:
@@ -218,7 +312,6 @@ def build_attendance_message(header_txt=""):
     else:
         reply_msg += f"🏟️ <b>ទីតាំង៖</b> 🟡 [មិនទាន់កក់តារាង]\n\n"
                 
-    # 🌟 បញ្ជីឈ្មោះអ្នកលេង (Player List Beautification)
     if today_players:
         reply_msg += "👥 <b>បញ្ជីឈ្មោះវត្តមានផ្លូវការ៖</b>\n"
         for idx, player in enumerate(today_players, start=1):
@@ -226,10 +319,11 @@ def build_attendance_message(header_txt=""):
     else:
         reply_msg += "<i>មិនទាន់មានសមាជិកចុះឈ្មោះផ្លូវការនៅឡើយទេ</i>\n"
         
+    # 🌟 អាប់ដេតចំណុចទី៣៖ ប្រើ Emoji ⏳ សម្រាប់កីឡាករបម្រុង
     if waiting_list:
         reply_msg += "\n⏳ <b>បញ្ជីកីឡាករបម្រុង (Waiting List)៖</b>\n"
         for idx, player in enumerate(waiting_list, start=1):
-            reply_msg += f"🔹 {idx}. {player}\n"
+            reply_msg += f"⏳ {idx}. {player}\n"
 
     reply_msg += "\n<code>       • • • • • • • • • • • • • •       </code>\n" \
                  "💡 <b>ការណែនាំ៖</b> ចុចប៊ូតុងខាងក្រោមដើម្បីប្រតិបត្តិការភ្លាមៗ!"
@@ -346,7 +440,7 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ឬចុចប៊ូតុង Join!")
         return
         
-    header_txt = f" បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) "
+    header_txt = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) - 📋"
     reply_msg = build_attendance_message(header_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
@@ -356,9 +450,12 @@ async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global today_players, waiting_list, player_stats
+    global today_players, waiting_list, current_teams, match_score, player_stats
     today_players = []
     waiting_list = []
+    current_teams = {"team_a": [], "team_b": []}
+    match_score = {"a": 0, "b": 0}
+    
     args = context.args
     all_keys = list(players_data.keys())
     total_to_add = len(all_keys)
@@ -379,9 +476,9 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             player_stats[p_name] = {"win": 0, "loss": 0}
             
     save_state()
-    team_format = f"{total_to_add // 2} Vs {total_to_add - (total_to_add // 2)}" if args else "ទាំងអស់"
-    msg = f"[Test Mode] បានដំណើរការស្វ័យប្រវត្ត! (ជម្រើសគូ៖ {team_format})\n📋 បានបញ្ចូលវត្តមានកីឡាករផ្លូវការចំនួន {len(today_players)} នាក់ និងបម្រុង {len(waiting_list)} នាក់សម្រាប់ការតេស្តរួចរាល់"
-    await update.message.reply_text(msg)
+    header_txt = f"🧪 <b>[Test Mode] បានដំណើការ!</b> (បញ្ចូលកីឡាករផ្លូវការ {len(today_players)} នាក់ | បម្រុង {len(waiting_list)} នាក់)"
+    reply_msg = build_attendance_message(header_txt)
+    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, selected_time_key, player_stats
@@ -626,7 +723,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"💡 បើបងវាយច្រឡំលេខ អាចវាយ <code>/undo</code> ដើម្បីដកពិន្ទុនេះចេញវិញបានភ្លាមៗបាទ!"
     await update.message.reply_text(msg_reply, parse_mode="HTML")
 
-# 🌟 ដកពាក្យ 'focus' ចេញស្អាតបាត
+# 🌟 អាប់ដេតចំណុចទី២៖ សម្អាតពាក្យ 'focus' និងសញ្ញាចុច '。' ចិន
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
@@ -657,7 +754,6 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     await update.message.reply_text(msg, parse_mode="HTML")
 
-# 🌟 Receipt Card Format សម្រាប់ /calculate
 async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not current_teams["team_a"]:
         await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
@@ -736,7 +832,6 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🌟 កែសម្រួលចន្លោះឃ្លាស្មើដៃគ្នាក្នុង /info
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
                f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
@@ -802,7 +897,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     
     global selected_time_key, selected_court_key
 
-    # ១. ចុច Join ខ្លួនឯង (ជាមួយ Toast Alert)
+    # ១. ចុច Join ខ្លួនឯង
     if data == "btn_join_self":
         p_name, status_txt = process_user_join(user_name)
         if p_name is None:
@@ -812,7 +907,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ២. ចុច Leave ខ្លួនឯង (ជាមួយ Toast Alert)
+    # ២. ចុច Leave ខ្លួនឯង
     elif data == "btn_leave_self":
         success, status_txt = process_user_leave(user_name)
         if not success:
@@ -828,7 +923,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         pending_friend_join[user_id] = True
         await query.message.reply_text("✍️ សូម Reply វាយឈ្មោះមិត្តភក្តិរបស់អ្នក (ឧទាហរណ៍៖ សុខា) ផ្ញើចូលគ្រុប៖")
 
-    # ៤. ចុច Leave មិត្តភក្តិ
+    # ៤. ចុច Leave មិត្តភក្តិ (ប្រើ Index សុវត្ថិភាព មិនឱ្យទាត់ 64-byte Error)
     elif data == "btn_leave_friend":
         await query.answer()
         all_active = today_players + waiting_list
@@ -837,8 +932,8 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             return
             
         remove_keyboard = []
-        for idx, player in enumerate(all_active, start=1):
-            remove_keyboard.append([InlineKeyboardButton(f"➖ {idx}. {player}", callback_data=f"removefriend_{player}")])
+        for idx, player in enumerate(all_active):
+            remove_keyboard.append([InlineKeyboardButton(f"➖ {idx+1}. {player}", callback_data=f"rf_{idx}")])
         remove_keyboard.append([InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")])
         
         await query.edit_message_text(
@@ -847,21 +942,30 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_markup=InlineKeyboardMarkup(remove_keyboard)
         )
 
-    # ៥. ដកឈ្មោះមិត្តភក្តិដែលបានជ្រើសរើស
-    elif data.startswith("removefriend_"):
+    # ៥. ដកឈ្មោះមិត្តភក្តិដែលបានជ្រើសរើសតាម Index
+    elif data.startswith("rf_"):
         await query.answer()
-        target_name = data.split("removefriend_")[1]
-        success, status_txt = process_user_leave(target_name)
-        reply_msg = build_attendance_message(status_txt)
-        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        try:
+            idx = int(data.split("_")[1])
+            all_active = today_players + waiting_list
+            if 0 <= idx < len(all_active):
+                target_name = all_active[idx]
+                success, status_txt = process_user_leave(target_name)
+                reply_msg = build_attendance_message(status_txt)
+                await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+            else:
+                reply_msg = build_attendance_message()
+                await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        except Exception:
+            reply_msg = build_attendance_message()
+            await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៦. ចុច Menu ម៉ោង (🌟 ២ កូឡោន / 2 Columns Grid)
+    # ៦. ចុច Menu ម៉ោង
     elif data == "menu_time":
         await query.answer()
         time_keyboard = []
         row = []
         for key, val in times_database.items():
-            # បង្រួមអត្ថបទលើប៊ូតុងឱ្យខ្លីស្អាត
             btn_text = f"⏰ {val.split(' ➡️ ')[-1] if '➡️' in val else val}"
             row.append(InlineKeyboardButton(btn_text, callback_data=f"settime_{key}"))
             if len(row) == 2:
@@ -958,7 +1062,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with fully optimized UI/UX & Clean Layout...")
+    print("Bot started polling with fully updated UI & safe Callback Query handlers...")
     app.run_polling()
 
 if __name__ == "__main__":
