@@ -79,6 +79,97 @@ courts_database = {
 times_database = {
     "1": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
     "2": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
+    "3": "៦:
+បាទបង! ខ្ញុំបានធ្វើការអាប់ដេតមុខងារ `/stats` (តារាងស្ថិតិប្រកួត) ដោយបានតម្រៀបការបង្ហាញឈ្មោះកីឡាករដាច់ដោយឡែកជា ២ ក្រុម (ក្រុម A និង ក្រុម B) [cite: 171] និងបានដាក់ចំណងជើង **`🔹 ក្រុម A 🔹`** និង **`🔸 ក្រុម B 🔸`** នៅចំកណ្តាលស្មើដៃគ្នាស្អាតបាត ១០០%។
+
+---
+
+### 🛠️ កូដ Python ពេញលេញដែលបានអាប់ដេតរួចរាល់
+
+សូមបង Copy កូដពេញលេញទាំងស្រុងខាងក្រោមនេះ យកទៅ Paste ជំនួសក្នុង File `khvolleyball.py` លើ GitHub របស់បងបាទ៖
+
+```python
+import random
+import os
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+import datetime
+import time
+import requests
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+
+# ==========================================
+# ១. ប្រព័ន្ធបន្លំ Server សម្រាប់ Render
+# ==========================================
+class FakeServer(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Bot is Alive 24/7!")
+        
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+
+def start_fake_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), FakeServer)
+    print(f"Fake Server running on port {port}...")
+    server.serve_forever()
+
+# ==========================================
+# ២. DATABASE កីឡាករផ្លូវការ និងការកំណត់ Timezone
+# ==========================================
+players_data = {
+    "Yeun": "setter",
+    "BOY": "setter",
+    "VI SAL": "setter",
+    "Thorn Samay": 3,
+    "Phirom YEM": 3,
+    "Phatdon": 3,
+    "Thinhhhh (Wick)": 3,
+    "Sila Soem": 2,
+    "mean chaomey": 2,
+    "Suyngorn": 2,
+    "៤៣.ចេន រដ្ឋនី គ២": 2,
+    "Kong Channborey (គង់ ច័ន្ទបុរី)": 2,
+    "Mang Thona": 2,
+    "Lxy": 2,
+    "Aok Lyhour": 2,
+    "𝐌ρη-𝐖𝐚ν🇰🇭": 2,
+    "Khorn Salit": 2,
+    "ផល មិនា🇰🇭": 2,
+    "Em Bunthan": 2,
+    "LAY": 1,
+    "ផល បញ្ញា(Phal Banha)": 1,
+    "Seng Ngonn": 1,
+    "Vanna Poy": 1,
+    "Khai Titi(Libero)": 1
+}
+
+left_spikers_list = ["Bunthan(Sky)", "Lyhour", "Lxy", "Salit", "Aok Lyhour", "Khorn Salit", "Em Bunthan"]
+today_players = []
+waiting_list = []  
+current_teams = {"team_a": [], "team_b": []}
+player_stats = {}
+match_score = {"a": 0, "b": 0}
+
+previous_match_score = None  
+previous_player_stats = None  
+
+courts_database = {
+    "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "មិនទាន់មាន"},
+    "2": {"name": "តារាងបាល់ទះ (សែនសុខ)", "link": "[https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic](https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic)"},
+    "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "[https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc](https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc)"}
+}
+
+times_database = {
+    "1": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
+    "2": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
     "3": "៦:០០ យប់ ដល់ ៨:០០ យប់",
     "4": "៦:០០ យប់ ដល់ ៧:៣០ យប់",
     "5": "៥:០០ យប់ ដល់ ៧:០០ យប់",
@@ -641,19 +732,59 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
+# 🌟 មុខងារ stats_command អាប់ដេតថ្មី៖ បែងចែកជា ក្រុម A និង ក្រុម B ស្អាតបាតចំកណ្តាល Center
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not player_stats:
         await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតសម្រាប់សមាជិកថ្ងៃនេះទេ។")
         return
         
     total_sets_played = match_score["a"] + match_score["b"]
-    msg = f" 📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ \n ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n<code>       • • • • • • • • • • • • • •       </code>\n"
+    msg = f"📊 <b>តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ</b>\n" \
+          f"🔥 ចំនួនសិតប្រកួតសរុបថ្ងៃនេះ៖ {total_sets_played} សិត (ក្រុម A ឈ្នះ {match_score['a']} | ក្រុម B ឈ្នះ {match_score['b']})\n" \
+          f"<code>       • • • • • • • • • • • • • •       </code>\n\n"
     
-    sorted_stats = sorted(player_stats.items(), key=lambda x: x[1]["win"], reverse=True)
-    for name, stat in sorted_stats: 
-        if stat["win"] > 0 or stat["loss"] > 0:
+    team_a = current_teams.get("team_a", [])
+    team_b = current_teams.get("team_b", [])
+    
+    if team_a or team_b:
+        # បង្ហាញ ក្រុម A
+        msg += "<code>            🔹 ក្រុម A 🔹            </code>\n"
+        has_a = False
+        for name in team_a:
+            stat = player_stats.get(name, {"win": 0, "loss": 0})
             trophy = "🏆 " if stat["win"] > stat["loss"] else "👤 "
             msg += f"{trophy}{name} ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
+            has_a = True
+        if not has_a:
+            msg += "<i>មិនទាន់មានទិន្នន័យ</i>\n"
+            
+        # បង្ហាញ ក្រុម B
+        msg += "\n<code>            🔸 ក្រុម B 🔸            </code>\n"
+        has_b = False
+        for name in team_b:
+            stat = player_stats.get(name, {"win": 0, "loss": 0})
+            trophy = "🏆 " if stat["win"] > stat["loss"] else "👤 "
+            msg += f"{trophy}{name} ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
+            has_b = True
+        if not has_b:
+            msg += "<i>មិនទាន់មានទិន្នន័យ</i>\n"
+            
+        # បង្ហាញកីឡាករផ្សេងទៀតដែលមិនទាន់ចូលក្រុម A/B (បើមាន)
+        other_players = [p for p in player_stats if p not in team_a and p not in team_b]
+        if other_players:
+            msg += "\n<code>          👤 កីឡាករផ្សេងទៀត 👤          </code>\n"
+            for name in other_players:
+                stat = player_stats[name]
+                if stat["win"] > 0 or stat["loss"] > 0:
+                    trophy = "🏆 " if stat["win"] > stat["loss"] else "👤 "
+                    msg += f"{trophy}{name} ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
+    else:
+        # ករណីមិនទាន់មានការបែងចែកក្រុម A/B
+        sorted_stats = sorted(player_stats.items(), key=lambda x: x[1]["win"], reverse=True)
+        for name, stat in sorted_stats: 
+            if stat["win"] > 0 or stat["loss"] > 0:
+                trophy = "🏆 " if stat["win"] > stat["loss"] else "👤 "
+                msg += f"{trophy}{name} ឈ្នះ៖ {stat['win']} សិត | ចាញ់៖ {stat['loss']} សិត\n"
             
     await update.message.reply_text(msg, parse_mode="HTML")
 
@@ -788,7 +919,7 @@ async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 # ==========================================
-# ៨. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុចជាមួយ Pop-up Alert គ្រប់ជម្រើស) 🌟
+# ៨. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
 # ==========================================
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -804,10 +935,8 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     if data == "btn_join_self":
         p_name, status_txt = process_user_join(user_name)
         if p_name is None:
-            # 🌟 លោត Pop-up ប្រាប់ប្រសិនបើមានឈ្មោះរួចហើយ
             await query.answer(f"💡 ឈ្មោះ [{user_name}] មានក្នុងបញ្ជីរួចហើយបាទ!", show_alert=True)
             return
-        # 🌟 លោត Pop-up ប្រាប់ពេល Join ជោគជ័យ
         await query.answer(f"✅ [{user_name}] ចុះឈ្មោះប្រកួតជោគជ័យ!", show_alert=True)
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
@@ -816,10 +945,8 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     elif data == "btn_leave_self":
         success, status_txt = process_user_leave(user_name)
         if not success:
-            # 🌟 លោត Pop-up ប្រាប់ប្រសិនបើគ្មានឈ្មោះក្នុងបញ្ជី
             await query.answer(f"💡 រកមិនឃើញឈ្មោះ [{user_name}] ក្នុងបញ្ជីវត្តមានទេ!", show_alert=True)
             return
-        # 🌟 លោត Pop-up ប្រាប់ពេល Leave ជោគជ័យ
         await query.answer(f"❌ បានដកឈ្មោះ [{user_name}] ចេញពីរវត្តមានរួចរាល់!", show_alert=True)
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
@@ -970,7 +1097,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with Pop-up Alerts on all button interactions...")
+    print("Bot started polling with updated centered team headers in /stats...")
     app.run_polling()
 
 if __name__ == "__main__":
