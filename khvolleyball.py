@@ -171,34 +171,7 @@ def load_state():
             print(f"⚠️ [STATE ERROR] Could not load local state: {e}")
 
 # ==========================================
-# ៤. SMART Auto-Reset (ម៉ោង 00:00 យប់នៅកម្ពុជា)
-# ==========================================
-def run_midnight_cronjob():
-    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, selected_time_key, player_stats
-    while True:
-        now = datetime.datetime.now(ICT)
-        tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min, tzinfo=ICT)
-        seconds_until_midnight = (tomorrow - now).total_seconds()
-        
-        time.sleep(seconds_until_midnight)
-        
-        if not current_teams["team_a"] and not current_teams["team_b"]:
-            today_players = []
-            waiting_list = []
-            previous_match_score = None
-            previous_player_stats = None
-            current_teams = {"team_a": [], "team_b": []}
-            match_score = {"a": 0, "b": 0}
-            selected_court_key = None
-            selected_time_key = None
-            player_stats = {}
-            save_state()
-            print("🕒 [CRON JOB] Midnight Auto-Reset executed at 00:00 Cambodia Time (ICT).")
-        else:
-            print("🕒 [CRON JOB] Midnight Auto-Reset skipped (Advanced match exists).")
-
-# ==========================================
-# ៥. HELPER FUNCTIONS & INLINE KEYBOARDS
+# ៤. HELPER FUNCTIONS & INLINE KEYBOARDS
 # ==========================================
 def get_main_inline_keyboard():
     keyboard = [
@@ -225,15 +198,14 @@ def build_attendance_message(header_txt=""):
     if header_txt:
         reply_msg += f"{header_txt}\n\n"
         
+    # 🌟 Match Info Card (រៀបចំស្អាតបាត)
     reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n"
 
-    # 🌟 តម្រៀបម៉ោងចុះក្រោមស្អាតបាត
     if selected_time_key is not None and selected_time_key in times_database:
         reply_msg += f"⏰ <b>ម៉ោងប្រកួត៖</b> <code> {times_database[selected_time_key]} </code>\n🟢 [កំណត់រួចរាល់]\n"
     else:
         reply_msg += "⏰ <b>ម៉ោងប្រកួត៖</b> 🟡 [មិនទាន់ជ្រើសរើសម៉ោង]\n"
                 
-    # 🌟 តម្រៀបតារាងចុះក្រោមស្អាតបាត
     if selected_court_key is not None and selected_court_key in courts_database:
         court_info = courts_database[selected_court_key]
         court_name = court_info['name']
@@ -246,25 +218,26 @@ def build_attendance_message(header_txt=""):
     else:
         reply_msg += f"🏟️ <b>ទីតាំង៖</b> 🟡 [មិនទាន់កក់តារាង]\n\n"
                 
+    # 🌟 បញ្ជីឈ្មោះអ្នកលេង (Player List Beautification)
     if today_players:
+        reply_msg += "👥 <b>បញ្ជីឈ្មោះវត្តមានផ្លូវការ៖</b>\n"
         for idx, player in enumerate(today_players, start=1):
-            reply_msg += f"{idx}. {player}\n"
+            reply_msg += f"👤 {idx}. {player}\n"
     else:
         reply_msg += "<i>មិនទាន់មានសមាជិកចុះឈ្មោះផ្លូវការនៅឡើយទេ</i>\n"
         
     if waiting_list:
-        reply_msg += "\n⏳ <b>បញ្ជីកីឡាករបម្រុង៖</b>\n"
+        reply_msg += "\n⏳ <b>បញ្ជីកីឡាករបម្រុង (Waiting List)៖</b>\n"
         for idx, player in enumerate(waiting_list, start=1):
-            reply_msg += f"{idx}. {player}\n"
+            reply_msg += f"🔹 {idx}. {player}\n"
 
-    # 🌟 សញ្ញាខណ្ឌស្មើចំកណ្តាល
     reply_msg += "\n<code>       • • • • • • • • • • • • • •       </code>\n" \
                  "💡 <b>ការណែនាំ៖</b> ចុចប៊ូតុងខាងក្រោមដើម្បីប្រតិបត្តិការភ្លាមៗ!"
                  
     return reply_msg
 
 # ==========================================
-# ៦. PROCESSOR FUNCTIONS FOR JOIN / LEAVE
+# ៥. PROCESSOR FUNCTIONS FOR JOIN / LEAVE
 # ==========================================
 def process_user_join(name):
     global today_players, waiting_list, player_stats
@@ -286,7 +259,7 @@ def process_user_join(name):
                 break
         
     if matched_name in today_players or matched_name in waiting_list:
-        return None, f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ chart。"
+        return None, f"💡 ឈ្មោះ [{matched_name}] មានក្នុងបញ្ជីថ្ងៃនេះរួចហើយបាទ"
 
     if matched_name not in player_stats: 
         player_stats[matched_name] = {"win": 0, "loss": 0}
@@ -342,7 +315,7 @@ def process_user_leave(name):
         return False, f"💡 រកមិនឃើញឈ្មោះ [{matched_name}] ក្នុងបញ្ជីវត្តមានថ្ងៃនេះទេ។"
 
 # ==========================================
-# ៧. COMMAND HANDLERS
+# ៦. COMMAND HANDLERS
 # ==========================================
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
@@ -373,11 +346,10 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ឬចុចប៊ូតុង Join!")
         return
         
-    header_txt = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) - 📋"
+    header_txt = f" បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) "
     reply_msg = build_attendance_message(header_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-# 🌟 មុខងារ /match (ដកសញ្ញា 🏐🔥 ចេញរួចរាល់)
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ!"
     reply_msg = build_attendance_message(header_txt)
@@ -654,10 +626,11 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"💡 បើបងវាយច្រឡំលេខ អាចវាយ <code>/undo</code> ដើម្បីដកពិន្ទុនេះចេញវិញបានភ្លាមៗបាទ!"
     await update.message.reply_text(msg_reply, parse_mode="HTML")
 
+# 🌟 ដកពាក្យ 'focus' ចេញស្អាតបាត
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ focus។")
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
         return
         
     match_score = dict(previous_match_score)
@@ -684,6 +657,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     await update.message.reply_text(msg, parse_mode="HTML")
 
+# 🌟 Receipt Card Format សម្រាប់ /calculate
 async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not current_teams["team_a"]:
         await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
@@ -700,29 +674,28 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         total_people = len(team_a) + len(team_b)
         court_per_person = court_fee / total_people
         
+        report = "🧾 <b>——— វិក្កយបត្រគណនាប្រាក់ចំណាយ ———</b>\n\n" \
+                 f"💰 <b>ថ្លៃតារាងសរុប៖</b> {court_fee:,.0f} រៀល\n" \
+                 f"🍹 <b>ថ្លៃទឹក/ភេសជ្ជៈ៖</b> {total_drinks_fee:,.0f} រៀល\n" \
+                 f"👥 <b>អ្នកចូលរួមសរុប៖</b> {total_people} នាក់\n" \
+                 "<code>----------------------------------</code>\n"
+        
         if match_score["a"] == match_score["b"]:
             equal_share = (court_fee + total_drinks_fee) / total_people
-            report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
-                     f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
-                     f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
-                     f"🤝 លទ្ធផលប្រកួត៖ ស្មើគ្នា ({match_score['a']}-{match_score['b']}) ជានិយាម Fair Play\n" \
-                     f"💵 សមាជិកគ្រប់គ្នា (Toggle A និង B) 出ម្នាក់៖ {equal_share:,.0f} រៀល បាទបង​​។"
+            report += f"🤝 <b>លទ្ធផល៖</b> ស្មើគ្នា ({match_score['a']}-{match_score['b']}) ជានិយាម Fair Play\n\n" \
+                      f"💵 <b>សមាជិកគ្រប់គ្នា 出ម្នាក់៖</b> <code>{equal_share:,.0f} រៀល</code>"
         else:
             if match_score["a"] > match_score["b"]:
-                loser_addon_per_person = total_drinks_fee / len(team_b)
-                report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
-                         f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
-                         f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
-                         f"💵 ក្រុម A (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល\n" \
-                         f"🍹 ក្រុម B (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល"
+                loser_addon = total_drinks_fee / len(team_b)
+                report += f"🏆 <b>ក្រុម A (ឈ្នះ) 出ម្នាក់៖</b> <code>{court_per_person:,.0f} រៀល</code>\n" \
+                          f"🍹 <b>ក្រុម B (ចាញ់) 出ម្នាក់៖</b> <code>{(court_per_person + loser_addon):,.0f} រៀល</code>"
             else:
-                loser_addon_per_person = total_drinks_fee / len(team_a)
-                report = f"(💰)របាយការណ៍បែងចែកការចំណាយថ្ងៃនេះ(💰)\n\n" \
-                         f"💰 ថ្លៃតារាងសរុប៖ {court_fee:,.0f} រៀល\n" \
-                         f"🍹 ថ្លៃទឹកនិងទឹកអំពៅសរុប៖ {total_drinks_fee:,.0f} រៀល\n\n" \
-                         f"🍹 ក្រុម A (ចាញ់) 出ម្នាក់៖ {(court_per_person + loser_addon_per_person):,.0f} រៀល\n" \
-                         f"💵 ក្រុម B (ឈ្នះ) 出ម្នាក់៖ {court_per_person:,.0f} រៀល"
-        await update.message.reply_text(report)
+                loser_addon = total_drinks_fee / len(team_a)
+                report += f"🍹 <b>ក្រុម A (ចាញ់) 出ម្នាក់៖</b> <code>{(court_per_person + loser_addon):,.0f} រៀល</code>\n" \
+                          f"🏆 <b>ក្រុម B (ឈ្នះ) 出ម្នាក់៖</b> <code>{court_per_person:,.0f} រៀល</code>"
+                          
+        report += "\n<code>----------------------------------</code>\n💡 សូមបងប្អូនធ្វើការវេរទូទាត់តាមការកំណត់ខាងលើ!"
+        await update.message.reply_text(report, parse_mode="HTML")
     except ValueError:
         await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
 
@@ -763,6 +736,7 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
+# 🌟 កែសម្រួលចន្លោះឃ្លាស្មើដៃគ្នាក្នុង /info
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
                f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
@@ -779,20 +753,17 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if selected_court_key is not None and key == selected_court_key: 
             status_emoji = "[✅ កក់តារាងរួចរាល់]"
         else: 
-            status_emoji = "\n🟡 [មិនទាន់កក់តារាង]\n"
+            status_emoji = "🟡 [មិនទាន់កក់តារាង]"
         
         if selected_court_key is not None and key == selected_court_key: 
             info_msg += f"🔹 <b>[ទីតាំងបច្ចុប្បន្ន] លេខ {key}៖</b> {court['name']} {status_emoji}\n"
-            if court['link'] != "មិនទាន់មាន": 
-                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
-            else: 
-                info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
         else: 
-            info_msg += f"🔹 លេខ {key}៖ {court['name']} {status_emoji}\n"
-            if court['link'] != "មិនទាន់មាន": 
-                info_msg += f"🔗 លីង Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
-            else: 
-                info_msg += f"🔗 លីង Map៖ <code>មិនទាន់មាន</code>\n"
+            info_msg += f"🔹 <b>លេខ {key}៖</b> {court['name']} {status_emoji}\n"
+            
+        if court['link'] != "មិនទាន់មាន": 
+            info_msg += f"🔗 <b>លីង Map៖</b> <a href='{court['link']}'>ចុចទីនេះដើម្បីមើល Map 🏟️</a>\n"
+        else: 
+            info_msg += f"🔗 <b>លីង Map៖</b> <code>មិនទាន់មាន</code>\n"
         
         if i < total_courts: 
             info_msg += "<code>       • • • • • • • • • • • • • •       \n</code>"
@@ -802,7 +773,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
 # ==========================================
-# ៨. MESSAGE HANDLER សម្រាប់ REPLIES (JOIN ឱ្យមិត្ត)
+# ៧. MESSAGE HANDLER សម្រាប់ REPLIES (JOIN ឱ្យមិត្ត)
 # ==========================================
 async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
@@ -819,11 +790,10 @@ async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 # ==========================================
-# ៩. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
+# ៨. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
 # ==========================================
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
     
     user = query.from_user
     user_id = user.id
@@ -832,31 +802,35 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     
     global selected_time_key, selected_court_key
 
-    # ១. ចុច Join ខ្លួនឯង
+    # ១. ចុច Join ខ្លួនឯង (ជាមួយ Toast Alert)
     if data == "btn_join_self":
         p_name, status_txt = process_user_join(user_name)
         if p_name is None:
             await query.answer(status_txt, show_alert=True)
             return
+        await query.answer("✅ អ្នកបានចុះឈ្មោះប្រកួតជោគជ័យ!", show_alert=False)
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ២. ចុច Leave ខ្លួនឯង
+    # ២. ចុច Leave ខ្លួនឯង (ជាមួយ Toast Alert)
     elif data == "btn_leave_self":
         success, status_txt = process_user_leave(user_name)
         if not success:
             await query.answer(status_txt, show_alert=True)
             return
+        await query.answer("❌ បានដកឈ្មោះចេញពីបញ្ជីវត្តមាន!", show_alert=False)
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៣. ចុច Join មិត្តភក្តិ (Force Reply)
+    # ៣. ចុច Join មិត្តភក្តិ
     elif data == "btn_join_friend":
+        await query.answer()
         pending_friend_join[user_id] = True
         await query.message.reply_text("✍️ សូម Reply វាយឈ្មោះមិត្តភក្តិរបស់អ្នក (ឧទាហរណ៍៖ សុខា) ផ្ញើចូលគ្រុប៖")
 
-    # ៤. ចុច Leave មិត្តភក្តិ (បង្ហាញបញ្ជីឈ្មោះជាមួយសញ្ញា ➖)
+    # ៤. ចុច Leave មិត្តភក្តិ
     elif data == "btn_leave_friend":
+        await query.answer()
         all_active = today_players + waiting_list
         if not all_active:
             await query.answer("💡 មិនទាន់មានសមាជិកក្នុងបញ្ជីវត្តមាននៅឡើយទេ!", show_alert=True)
@@ -875,16 +849,27 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     # ៥. ដកឈ្មោះមិត្តភក្តិដែលបានជ្រើសរើស
     elif data.startswith("removefriend_"):
+        await query.answer()
         target_name = data.split("removefriend_")[1]
         success, status_txt = process_user_leave(target_name)
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៦. ចុច Menu ម៉ោង
+    # ៦. ចុច Menu ម៉ោង (🌟 ២ កូឡោន / 2 Columns Grid)
     elif data == "menu_time":
+        await query.answer()
         time_keyboard = []
+        row = []
         for key, val in times_database.items():
-            time_keyboard.append([InlineKeyboardButton(f"⏰ {val}", callback_data=f"settime_{key}")])
+            # បង្រួមអត្ថបទលើប៊ូតុងឱ្យខ្លីស្អាត
+            btn_text = f"⏰ {val.split(' ➡️ ')[-1] if '➡️' in val else val}"
+            row.append(InlineKeyboardButton(btn_text, callback_data=f"settime_{key}"))
+            if len(row) == 2:
+                time_keyboard.append(row)
+                row = []
+        if row:
+            time_keyboard.append(row)
+            
         time_keyboard.append([InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")])
         
         await query.edit_message_text(
@@ -895,6 +880,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     # ៧. ចុច ដូរម៉ោង
     elif data.startswith("settime_"):
+        await query.answer()
         time_key = data.split("_")[1]
         selected_time_key = time_key
         save_state()
@@ -905,6 +891,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     # ៨. ចុច Menu តារាង
     elif data == "menu_court":
+        await query.answer()
         court_keyboard = []
         for key, court in courts_database.items():
             court_keyboard.append([InlineKeyboardButton(f"🏟️ {court['name']}", callback_data=f"setcourt_{key}")])
@@ -918,6 +905,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     # ៩. ចុច កក់តារាង
     elif data.startswith("setcourt_"):
+        await query.answer()
         court_key = data.split("_")[1]
         selected_court_key = court_key
         save_state()
@@ -928,11 +916,12 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     # ១០. ចុច ត្រឡប់ក្រោយ
     elif data == "menu_back":
+        await query.answer()
         reply_msg = build_attendance_message()
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 # ==========================================
-# ១០. MAIN FUNCTION
+# ៩. MAIN FUNCTION
 # ==========================================
 def main() -> None:
     token = "8066577030:AAFknZwPAhvAxy_NGlYgSkB8Ouv2PRYVs_M"
@@ -942,9 +931,6 @@ def main() -> None:
     
     # 🚀 ចាប់ផ្ដើម Fake Server សម្រាប់ Render
     threading.Thread(target=start_fake_server, daemon=True).start()
-    
-    # 🕒 ចាប់ផ្ដើម Background Cron Job ម៉ោង 00:00 យប់ (កម្ពុជា)
-    threading.Thread(target=run_midnight_cronjob, daemon=True).start()
     
     app = ApplicationBuilder().token(token).build()
     
@@ -972,7 +958,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with updated clean layout...")
+    print("Bot started polling with fully optimized UI/UX & Clean Layout...")
     app.run_polling()
 
 if __name__ == "__main__":
