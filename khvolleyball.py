@@ -173,7 +173,6 @@ def load_state():
 # ==========================================
 # ៤. HELPER FUNCTIONS & INLINE KEYBOARDS
 # ==========================================
-# 🌟 បន្ថែមប៊ូតុង ⚔️ Match ក្នុង Inline Keyboard
 def get_main_inline_keyboard():
     keyboard = [
         [
@@ -635,7 +634,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ focus。")
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
         return
         
     match_score = dict(previous_match_score)
@@ -962,14 +961,14 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ១០. 🌟 ចុច ប៊ូតុង ⚔️ Match លើ Inline Keyboard
+    # ១០. 🌟 ចុច ប៊ូតុង ⚔️ Match (Alert Pop-Up & ផ្ញើសារ List ថ្មីរុញចុះមកក្រោម)
     elif data == "btn_match":
-        await query.answer("👉 តោះៗ! សូមប្រញាប់ចុះឈ្មោះប្រកួត!", show_alert=False)
+        await query.answer("👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះប្រកួតថ្ងៃនេះ!", show_alert=True)
         header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ!"
         reply_msg = build_attendance_message(header_txt)
-        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        await query.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ១១. 🌟 ចុច របៀបប្រើប្រាស់លម្អិត (បន្ថែម Match ក្នុងបញ្ជីណែនាំ)
+    # ១១. ចុច របៀបប្រើប្រាស់លម្អិត
     elif data == "btn_help_guide":
         await query.answer("📖 សៀវភៅណែនាំប្រើប្រាស់លម្អិត", show_alert=False)
         guide_msg = "📖 <b>——— សៀវភៅណែនាំប្រើប្រាស់ BOT ———</b>\n\n" \
@@ -1044,7 +1043,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with Match Button and guide details added...")
+    print("Bot started polling with Pop-up Alert and fresh new list message on Match button...")
     app.run_polling()
 
 if __name__ == "__main__":
