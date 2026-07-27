@@ -70,8 +70,9 @@ match_score = {"a": 0, "b": 0}
 previous_match_score = None  
 previous_player_stats = None  
 
+# 🌟 អាប់ដេត Link Map តារាងសាំហាន រួចរាល់
 courts_database = {
-    "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "មិនទាន់មាន"},
+    "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "https://maps.app.goo.gl/8pEx1RpuJ3uiGr256"},
     "2": {"name": "តារាងបាល់ទះ (សែនសុខ)", "link": "https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic"},
     "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc"}
 }
@@ -633,7 +634,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ focus。")
         return
         
     match_score = dict(previous_match_score)
@@ -960,25 +961,28 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ១០. 🌟 ចុច របៀបប្រើប្រាស់លម្អិត
+    # ១០. ចុច របៀបប្រើប្រាស់លម្អិត
     elif data == "btn_help_guide":
         await query.answer("📖 សៀវភៅណែនាំប្រើប្រាស់លម្អិត", show_alert=False)
         guide_msg = "📖 <b>——— សៀវភៅណែនាំប្រើប្រាស់ BOT ———</b>\n\n" \
-                    "🔹 <b>១. ការចុះឈ្មោះលេង៖</b>\n" \
-                    "• ចុច <code>✅ Join ខ្លួនឯង</code> ដើម្បីចុះឈ្មោះ\n" \
+                    "🔹 <b>១. ការចុះឈ្មោះ និងដកឈ្មោះ៖</b>\n" \
+                    "• ចុច <code>✅ Join ខ្លួនឯង</code> ដើម្បីចុះឈ្មោះចូលរួម\n" \
                     "• ចុច <code>➕ Join មិត្តភក្តិ</code> រួច Reply វាយឈ្មោះមិត្តភក្តិ\n" \
-                    "• ចុច <code>❌ Leave</code> ដើម្បីដកឈ្មោះចេញវិញ\n\n" \
+                    "• ចុច <code>❌ Leave ខ្លួនឯង</code> ដើម្បីដកឈ្មោះចេញវិញ\n" \
+                    "• ចុច <code>➖ Leave មិត្តភក្តិ</code> ដើម្បីជ្រើសរើសដកឈ្មោះមិត្តភក្តិ\n\n" \
                     "🔹 <b>២. ការកំណត់ម៉ោង និងតារាង៖</b>\n" \
                     "• ចុច <code>⏰ ជ្រើសរើសម៉ោង</code> ដើម្បីដូរម៉ោងប្រកួត\n" \
-                    "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាង\n\n" \
-                    "🔹 <b>៣. ជាបញ្ជាសំខាន់ៗ (Commands)៖</b>\n" \
-                    "• /shuffle ៖ ចាប់គូស្វ័យប្រវត្ត (ស្មើដៃ)\n" \
+                    "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាងប្រកួត\n\n" \
+                    "🔹 <b>៣. បញ្ជាសំខាន់ៗ (Commands)៖</b>\n" \
+                    "• /list ៖ មើលបញ្ជីវត្តមាន និងកាតប្រកួតបច្ចុប្បន្ន\n" \
+                    "• /info ៖ មើលព័ត៌មានម៉ោងប្រកួត និងទីតាំងតារាងទាំងអស់\n" \
+                    "• /shuffle ៖ ចាប់គូស្វ័យប្រវត្ត (ស្មើដៃតាម Skill)\n" \
                     "• /manual [ក្រុមA] v [ក្រុមB] ៖ ចាប់គូដោយដៃ\n" \
-                    "• /setscore [សិតA] [សិតB] ៖ កត់ត្រាពិន្ទុ (Ex: <code>/setscore 2 1</code>)\n" \
+                    "• /setscore [សិតA] [សិតB] ៖ កត់ត្រាពិន្ទុប្រកួត (Ex: <code>/setscore 2 1</code>)\n" \
                     "• /undo ៖ ដកពិន្ទុដែលវាយច្រឡំចេញវិញ\n" \
-                    "• /stats ៖ មើលតារាងស្ថិតិឈ្នះ/ចាញ់\n" \
+                    "• /stats ៖ មើលតារាងស្ថិតិឈ្នះ/ចាញ់ប្រចាំថ្ងៃ\n" \
                     "• /calculate [ថ្លៃតារាង] [ថ្លៃទឹក] ៖ គណនាប្រាក់ចំណាយចែកគ្នាបង់\n" \
-                    "• /clear ៖ សម្អាតបញ្ជីវត្តមាន និងពិន្ទុឡើងវិញ\n\n" \
+                    "• /clear ៖ សម្អាតបញ្ជីវត្តមាន និងពិន្ទុប្រកួតទាំងអស់ឡើងវិញ\n\n" \
                     "<code>----------------------------------</code>"
         
         back_keyboard = InlineKeyboardMarkup([
@@ -1030,7 +1034,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with Detailed Guide Button added...")
+    print("Bot started polling with Samhan Map Link added...")
     app.run_polling()
 
 if __name__ == "__main__":
