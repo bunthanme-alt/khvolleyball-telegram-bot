@@ -186,6 +186,9 @@ def get_main_inline_keyboard():
         [
             InlineKeyboardButton("⏰ ជ្រើសរើសម៉ោង", callback_data="menu_time"),
             InlineKeyboardButton("🏟️ ជ្រើសរើសតារាង", callback_data="menu_court")
+        ],
+        [
+            InlineKeyboardButton("📖 របៀបប្រើប្រាស់លម្អិត", callback_data="btn_help_guide")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -229,7 +232,6 @@ def build_attendance_message(header_txt=""):
         for idx, player in enumerate(waiting_list, start=1):
             reply_msg += f"⏳ {idx}. {player}\n"
 
-    # 🌟 សញ្ញាខណ្ឌដូចនៅវិក្កយបត្រ (Fit ស្អាត)
     reply_msg += "\n<code>----------------------------------</code>\n" \
                  "💡 <b>ការណែនាំ៖</b> ចុចប៊ូតុងខាងក្រោមដើម្បីប្រតិបត្តិការភ្លាមៗ!"
                  
@@ -345,7 +347,7 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⏳ មិនទាន់មានសមាជិកចុះឈ្មោះប្រគួតថ្ងៃនេះនៅឡើយទេ។ វាយ /join ឬចុចប៊ូតុង Join!")
         return
         
-    header_txt = f"📋 បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់)"
+    header_txt = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) - 📋"
     reply_msg = build_attendance_message(header_txt)
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
@@ -631,7 +633,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ focus。")
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
         return
         
     match_score = dict(previous_match_score)
@@ -642,7 +644,6 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     await update.message.reply_text(f"🔄 [Undo ជោគជ័យ] បានត្រឡប់ពិន្ទុមកការប្រកួតមុនវិញរៀបរយ! ពិន្ទុបច្ចុប្បន្ន៖ ក្រុម A {match_score['a']} - {match_score['b']} ក្រុម B")
 
-# 🌟 មុខងារ stats_command អាប់ដេតសញ្ញាខណ្ឌ Fit ស្អាត
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not player_stats:
         await update.message.reply_text("📊 មិនទាន់មានទិន្នន័យស្ថិតិប្រកួតសម្រាប់សមាជិកថ្ងៃនេះទេ។")
@@ -772,7 +773,6 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chosen_time_text = times_database[selected_time_key]
     await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
 
-# 🌟 មុខងារ info_command អាប់ដេតសញ្ញាខណ្ឌ Fit ស្អាត
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
                f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
@@ -960,7 +960,33 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ១០. ចុច ត្រឡប់ក្រោយ
+    # ១០. 🌟 ចុច របៀបប្រើប្រាស់លម្អិត
+    elif data == "btn_help_guide":
+        await query.answer("📖 សៀវភៅណែនាំប្រើប្រាស់លម្អិត", show_alert=False)
+        guide_msg = "📖 <b>——— សៀវភៅណែនាំប្រើប្រាស់ BOT ———</b>\n\n" \
+                    "🔹 <b>១. ការចុះឈ្មោះលេង៖</b>\n" \
+                    "• ចុច <code>✅ Join ខ្លួនឯង</code> ដើម្បីចុះឈ្មោះ\n" \
+                    "• ចុច <code>➕ Join មិត្តភក្តិ</code> រួច Reply វាយឈ្មោះមិត្តភក្តិ\n" \
+                    "• ចុច <code>❌ Leave</code> ដើម្បីដកឈ្មោះចេញវិញ\n\n" \
+                    "🔹 <b>២. ការកំណត់ម៉ោង និងតារាង៖</b>\n" \
+                    "• ចុច <code>⏰ ជ្រើសរើសម៉ោង</code> ដើម្បីដូរម៉ោងប្រកួត\n" \
+                    "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាង\n\n" \
+                    "🔹 <b>៣. បញ្ជាបញ្ជាសំខាន់ៗ (Commands)៖</b>\n" \
+                    "• /shuffle ៖ ចាប់គូស្វ័យប្រវត្ត (ស្មើដៃ)\n" \
+                    "• /manual [ក្រុមA] v [ក្រុមB] ៖ ចាប់គូដោយដៃ\n" \
+                    "• /setscore [សិតA] [សិតB] ៖ កត់ត្រាពិន្ទុ (Ex: <code>/setscore 2 1</code>)\n" \
+                    "• /undo ៖ ដកពិន្ទុដែលវាយច្រឡំចេញវិញ\n" \
+                    "• /stats ៖ មើលតារាងស្ថិតិឈ្នះ/ចាញ់\n" \
+                    "• /calculate [ថ្លៃតារាង] [ថ្លៃទឹក] ៖ គណនាប្រាក់ចំណាយចែកគ្នាបង់\n" \
+                    "• /clear ៖ សម្អាតបញ្ជីវត្តមាន និងពិន្ទុឡើងវិញ\n\n" \
+                    "<code>----------------------------------</code>"
+        
+        back_keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")]
+        ])
+        await query.edit_message_text(guide_msg, parse_mode="HTML", reply_markup=back_keyboard)
+
+    # ១១. ចុច ត្រឡប់ក្រោយ
     elif data == "menu_back":
         await query.answer("🔙 ត្រឡប់មកផ្ទាំងដើមវិញ!", show_alert=False)
         reply_msg = build_attendance_message()
@@ -1004,7 +1030,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with uniform receipt-style dividers...")
+    print("Bot started polling with Detailed Guide Button added...")
     app.run_polling()
 
 if __name__ == "__main__":
