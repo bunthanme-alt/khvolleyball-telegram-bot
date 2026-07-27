@@ -70,7 +70,6 @@ match_score = {"a": 0, "b": 0}
 previous_match_score = None  
 previous_player_stats = None  
 
-# 🌟 អាប់ដេត Link Map តារាងសាំហាន រួចរាល់
 courts_database = {
     "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "https://maps.app.goo.gl/8pEx1RpuJ3uiGr256"},
     "2": {"name": "តារាងបាល់ទះ (សែនសុខ)", "link": "https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic"},
@@ -174,6 +173,7 @@ def load_state():
 # ==========================================
 # ៤. HELPER FUNCTIONS & INLINE KEYBOARDS
 # ==========================================
+# 🌟 បន្ថែមប៊ូតុង ⚔️ Match ក្នុង Inline Keyboard
 def get_main_inline_keyboard():
     keyboard = [
         [
@@ -189,6 +189,7 @@ def get_main_inline_keyboard():
             InlineKeyboardButton("🏟️ ជ្រើសរើសតារាង", callback_data="menu_court")
         ],
         [
+            InlineKeyboardButton("⚔️ Match", callback_data="btn_match"),
             InlineKeyboardButton("📖 របៀបប្រើប្រាស់លម្អិត", callback_data="btn_help_guide")
         ]
     ]
@@ -961,7 +962,14 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ១០. ចុច របៀបប្រើប្រាស់លម្អិត
+    # ១០. 🌟 ចុច ប៊ូតុង ⚔️ Match លើ Inline Keyboard
+    elif data == "btn_match":
+        await query.answer("👉 តោះៗ! សូមប្រញាប់ចុះឈ្មោះប្រកួត!", show_alert=False)
+        header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ!"
+        reply_msg = build_attendance_message(header_txt)
+        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+
+    # ១១. 🌟 ចុច របៀបប្រើប្រាស់លម្អិត (បន្ថែម Match ក្នុងបញ្ជីណែនាំ)
     elif data == "btn_help_guide":
         await query.answer("📖 សៀវភៅណែនាំប្រើប្រាស់លម្អិត", show_alert=False)
         guide_msg = "📖 <b>——— សៀវភៅណែនាំប្រើប្រាស់ BOT ———</b>\n\n" \
@@ -970,10 +978,12 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                     "• ចុច <code>➕ Join មិត្តភក្តិ</code> រួច Reply វាយឈ្មោះមិត្តភក្តិ\n" \
                     "• ចុច <code>❌ Leave ខ្លួនឯង</code> ដើម្បីដកឈ្មោះចេញវិញ\n" \
                     "• ចុច <code>➖ Leave មិត្តភក្តិ</code> ដើម្បីជ្រើសរើសដកឈ្មោះមិត្តភក្តិ\n\n" \
-                    "🔹 <b>២. ការកំណត់ម៉ោង និងតារាង៖</b>\n" \
+                    "🔹 <b>២. ការកំណត់ម៉ោង តារាង និងការប្រកួត៖</b>\n" \
                     "• ចុច <code>⏰ ជ្រើសរើសម៉ោង</code> ដើម្បីដូរម៉ោងប្រកួត\n" \
-                    "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាងប្រកួត\n\n" \
+                    "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាងប្រកួត\n" \
+                    "• ចុច <code>⚔️ Match</code> ដើម្បីប្រកាសកោះហៅសមាជិកចុះឈ្មោះប្រកួត\n\n" \
                     "🔹 <b>៣. បញ្ជាសំខាន់ៗ (Commands)៖</b>\n" \
+                    "• /match ៖ ប្រកាសកោះហៅសមាជិកចូលរួមប្រកួតថ្ងៃនេះ\n" \
                     "• /list ៖ មើលបញ្ជីវត្តមាន និងកាតប្រកួតបច្ចុប្បន្ន\n" \
                     "• /info ៖ មើលព័ត៌មានម៉ោងប្រកួត និងទីតាំងតារាងទាំងអស់\n" \
                     "• /shuffle ៖ ចាប់គូស្វ័យប្រវត្ត (ស្មើដៃតាម Skill)\n" \
@@ -990,7 +1000,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         ])
         await query.edit_message_text(guide_msg, parse_mode="HTML", reply_markup=back_keyboard)
 
-    # ១១. ចុច ត្រឡប់ក្រោយ
+    # ១២. ចុច ត្រឡប់ក្រោយ
     elif data == "menu_back":
         await query.answer("🔙 ត្រឡប់មកផ្ទាំងដើមវិញ!", show_alert=False)
         reply_msg = build_attendance_message()
@@ -1034,7 +1044,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with Samhan Map Link added...")
+    print("Bot started polling with Match Button and guide details added...")
     app.run_polling()
 
 if __name__ == "__main__":
