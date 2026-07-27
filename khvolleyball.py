@@ -971,7 +971,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                     "🔹 <b>២. ការកំណត់ម៉ោង និងតារាង៖</b>\n" \
                     "• ចុច <code>⏰ ជ្រើសរើសម៉ោង</code> ដើម្បីដូរម៉ោងប្រកួត\n" \
                     "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាង\n\n" \
-                    "🔹 <b>៣. បញ្ជាបញ្ជាសំខាន់ៗ (Commands)៖</b>\n" \
+                    "🔹 <b>៣. ជាបញ្ជាសំខាន់ៗ (Commands)៖</b>\n" \
                     "• /shuffle ៖ ចាប់គូស្វ័យប្រវត្ត (ស្មើដៃ)\n" \
                     "• /manual [ក្រុមA] v [ក្រុមB] ៖ ចាប់គូដោយដៃ\n" \
                     "• /setscore [សិតA] [សិតB] ៖ កត់ត្រាពិន្ទុ (Ex: <code>/setscore 2 1</code>)\n" \
