@@ -68,6 +68,10 @@ current_teams = {"team_a": [], "team_b": []}
 player_stats = {}
 match_score = {"a": 0, "b": 0}
 
+# 🌟 ប្រព័ន្ធបន្ថែមសម្រាប់ MVP និងការទូទាត់
+mvp_votes = {} # {voter_id: voted_player_name}
+paid_players = set() # {player_name}
+
 previous_match_score = None  
 previous_player_stats = None  
 
@@ -111,7 +115,8 @@ def save_state():
         "player_stats": player_stats,
         "match_score": match_score,
         "selected_court_key": selected_court_key,
-        "selected_time_key": selected_time_key
+        "selected_time_key": selected_time_key,
+        "paid_players": list(paid_players)
     }
     
     if UPSTASH_URL and UPSTASH_TOKEN:
@@ -133,7 +138,7 @@ def save_state():
         print(f"⚠️ [STATE ERROR] Could not save local state: {e}")
 
 def load_state():
-    global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, selected_time_key
+    global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, selected_time_key, paid_players
     
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
@@ -151,6 +156,7 @@ def load_state():
                     match_score = data.get("match_score", {"a": 0, "b": 0})
                     selected_court_key = data.get("selected_court_key")
                     selected_time_key = data.get("selected_time_key")
+                    paid_players = set(data.get("paid_players", []))
                     print("🔄 [DATA] State restored from Upstash Redis Cloud!")
                     return
         except Exception as e:
@@ -167,6 +173,7 @@ def load_state():
                 match_score = data.get("match_score", {"a": 0, "b": 0})
                 selected_court_key = data.get("selected_court_key")
                 selected_time_key = data.get("selected_time_key")
+                paid_players = set(data.get("paid_players", []))
                 print("🔄 [DATA] State restored from Local Backup State File!")
         except Exception as e:
             print(f"⚠️ [STATE ERROR] Could not load local state: {e}")
@@ -193,7 +200,10 @@ def get_main_inline_keyboard():
             InlineKeyboardButton("📊 ស្ថិតិប្រកួត (Stats)", callback_data="btn_stats")
         ],
         [
-            InlineKeyboardButton("⚔️ Match", callback_data="btn_match"),
+            InlineKeyboardButton("🏅 បោះឆ្នោត MVP", callback_data="btn_vote_mvp"),
+            InlineKeyboardButton("⚔️ Match", callback_data="btn_match")
+        ],
+        [
             InlineKeyboardButton("📖 របៀបប្រើប្រាស់លម្អិត", callback_data="btn_help_guide")
         ]
     ]
@@ -230,6 +240,9 @@ def get_score_keyboard():
             InlineKeyboardButton("🏆 B (1-4)", callback_data="score_1_4"),
             InlineKeyboardButton("🏆 B (2-4)", callback_data="score_2_4"),
             InlineKeyboardButton("↩️ Undo ពិន្ទុ", callback_data="score_undo")
+        ],
+        [
+            InlineKeyboardButton("🏅 បោះឆ្នោត MVP ប្រចាំថ្ងៃ", callback_data="btn_vote_mvp")
         ],
         [
             InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")
@@ -597,11 +610,13 @@ async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global today_players, waiting_list, current_teams, match_score, player_stats
+    global today_players, waiting_list, current_teams, match_score, player_stats, mvp_votes, paid_players
     today_players = []
     waiting_list = []
     current_teams = {"team_a": [], "team_b": []}
     match_score = {"a": 0, "b": 0}
+    mvp_votes = {}
+    paid_players = set()
     
     args = context.args
     all_keys = list(players_data.keys())
@@ -628,7 +643,7 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, selected_time_key, player_stats
+    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, selected_time_key, player_stats, mvp_votes, paid_players
     today_players = []
     waiting_list = []
     previous_match_score = None
@@ -638,6 +653,8 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_court_key = None
     selected_time_key = None
     player_stats = {}
+    mvp_votes = {}
+    paid_players = set()
     save_state()
     await update.message.reply_text("♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
 
@@ -753,7 +770,7 @@ async def setscore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global match_score, previous_match_score, player_stats, previous_player_stats
     if previous_match_score is None or previous_player_stats is None:
-        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ focus。")
+        await update.message.reply_text("❌ មិនទាន់មានទិន្នន័យពិន្ទុចុងក្រោយដែលអាចដកវិញ (Undo) បានឡើយបាទ។")
         return
         
     match_score = dict(previous_match_score)
@@ -768,6 +785,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = build_stats_text()
     await update.message.reply_text(msg, parse_mode="HTML")
 
+# 🌟 មុខងារ /calculate អាប់ដេតបន្ថែមព័ត៌មាន QR / គណនីវេរប្រាក់ (ដាក់ថាមិនទាន់មាន)
 async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not current_teams["team_a"]:
         await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
@@ -804,8 +822,16 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 report += f"🍹 <b>ក្រុម A (ចាញ់) 出ម្នាក់៖</b> <code>{(court_per_person + loser_addon):,.0f} រៀល</code>\n" \
                           f"🏆 <b>ក្រុម B (ឈ្នះ) 出ម្នាក់៖</b> <code>{court_per_person:,.0f} រៀល</code>"
                           
-        report += "\n<code>----------------------------------</code>\n💡 សូមបងប្អូនធ្វើការវេរទូទាត់តាមការកំណត់ខាងលើ!"
-        await update.message.reply_text(report, parse_mode="HTML")
+        report += "\n<code>----------------------------------</code>\n" \
+                  "📲 <b>QR Code / គណនីទូទាត់៖</b> <code>មិនទាន់មាន</code>\n" \
+                  "💡 សូមបងប្អូនធ្វើការវេរទូទាត់ប្រាក់តាមការកំណត់ខាងលើ!"
+                  
+        calc_keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💸 ខ្ញុំបានទូទាត់រួចហើយ", callback_data="btn_mark_paid")],
+            [InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")]
+        ])
+        
+        await update.message.reply_text(report, parse_mode="HTML", reply_markup=calc_keyboard)
     except ValueError:
         await update.message.reply_text("❌ សូមបញ្ចូលជាលេខធម្មតា។")
 
@@ -881,6 +907,29 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
+# 🌟 មុខងារ Command /mvp សម្រាប់មើលលទ្ធផលបោះឆ្នោត MVP
+async def mvp_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not mvp_votes:
+        await update.message.reply_text("🏅 មិនទាន់មានការបោះឆ្នោតជ្រើសរើស MVP ថ្ងៃនេះនៅឡើយទេ។ ចុចប៊ូតុង [ 🏅 បោះឆ្នោត MVP ] ដើម្បីបោះឆ្នោត!")
+        return
+        
+    vote_counts = {}
+    for candidate in mvp_votes.values():
+        vote_counts[candidate] = vote_counts.get(candidate, 0) + 1
+        
+    sorted_mvp = sorted(vote_counts.items(), key=lambda x: x[1], reverse=True)
+    winner_name, top_votes = sorted_mvp[0]
+    
+    msg = f"🏅 <b>——— កីឡាករឆ្នើមប្រចាំថ្ងៃ (MVP OF THE DAY) ———</b>\n\n" \
+          f"🏆 <b>ជ័យលាភី MVP៖</b> 🌟 <b>{winner_name}</b> 🌟 (ទទួលបាន {top_votes} សំឡេង)\n" \
+          f"<code>----------------------------------</code>\n" \
+          f"📊 <b>លទ្ធផលបោះឆ្នោតសរុប៖</b>\n"
+          
+    for name, count in sorted_mvp:
+        msg += f"• {name} ៖ {count} សំឡេង\n"
+        
+    await update.message.reply_text(msg, parse_mode="HTML")
+
 # ==========================================
 # ៧. MESSAGE HANDLER សម្រាប់ REPLIES (JOIN ឱ្យមិត្ត)
 # ==========================================
@@ -905,7 +954,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     user_name = f"{user.first_name} {user.last_name or ''}".strip()
     data = query.data
     
-    global selected_time_key, selected_court_key, match_score, previous_match_score, player_stats, previous_player_stats
+    global selected_time_key, selected_court_key, match_score, previous_match_score, player_stats, previous_player_stats, mvp_votes, paid_players
 
     # ១. ចុច Join ខ្លួនឯង
     if data == "btn_join_self":
@@ -1044,7 +1093,62 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         msg = build_stats_text()
         await query.message.reply_text(msg, parse_mode="HTML")
 
-    # ១២. ចុច ប៊ូតុងកត់ត្រាពិន្ទុរហ័ស (គាំទ្ររហូតដល់ ៦ សិត)
+    # ១២. 🌟 ចុច ប៊ូតុង 🏅 បោះឆ្នោត MVP ប្រចាំថ្ងៃ
+    elif data == "btn_vote_mvp":
+        if not today_players:
+            await query.answer("💡 មិនទាន់មានបញ្ជីវត្តមានសម្រាប់បោះឆ្នោត MVP ទេ!", show_alert=True)
+            return
+            
+        await query.answer("🏅 សូមជ្រើសរើសកីឡាករឆ្នើម MVP ថ្ងៃនេះ!", show_alert=False)
+        mvp_keyboard = []
+        for idx, player in enumerate(today_players):
+            mvp_keyboard.append([InlineKeyboardButton(f"🏅 {player}", callback_data=f"cast_mvp_{idx}")])
+        mvp_keyboard.append([InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")])
+        
+        await query.message.reply_text(
+            "🏅 <b>សូមបោះឆ្នោតជ្រើសរើសកីឡាករឆ្នើម (MVP OF THE DAY)៖</b>", 
+            parse_mode="HTML", 
+            reply_markup=InlineKeyboardMarkup(mvp_keyboard)
+        )
+
+    # ១៣. 🌟 បោះឆ្នោតឱ្យបេក្ខជន MVP
+    elif data.startswith("cast_mvp_"):
+        try:
+            idx = int(data.split("_")[2])
+            if 0 <= idx < len(today_players):
+                candidate_name = today_players[idx]
+                mvp_votes[user_id] = candidate_name
+                await query.answer(f"🎉 អ្នកបានបោះឆ្នោតឱ្យ [{candidate_name}] ជា MVP រួចរាល់!", show_alert=True)
+                
+                # បង្ហាញលទ្ធផល MVP បច្ចុប្បន្ន
+                vote_counts = {}
+                for candidate in mvp_votes.values():
+                    vote_counts[candidate] = vote_counts.get(candidate, 0) + 1
+                sorted_mvp = sorted(vote_counts.items(), key=lambda x: x[1], reverse=True)
+                
+                res_txt = f"🏅 <b>[អាប់ដេតការបោះឆ្នោត MVP]</b>\n"
+                for name, count in sorted_mvp:
+                    res_txt += f"• {name} ៖ {count} សំឡេង\n"
+                await query.edit_message_text(res_txt, parse_mode="HTML")
+        except Exception:
+            await query.answer("💡 មានបញ្ហាក្នុងការបោះឆ្នោត!", show_alert=True)
+
+    # ១៤. 🌟 ចុច ប៊ូតុងទូទាត់ប្រាក់ (Mark Paid)
+    elif data == "btn_mark_paid":
+        matched_name = None
+        for p in today_players:
+            if p.lower() in user_name.lower() or user_name.lower() in p.lower():
+                matched_name = p
+                break
+        if not matched_name:
+            matched_name = user_name
+            
+        paid_players.add(matched_name)
+        save_state()
+        await query.answer(f"✅ ប្រព័ន្ធបានកត់ត្រាការទូទាត់ប្រាក់របស់ [{matched_name}] រួចរាល់!", show_alert=True)
+        await query.message.reply_text(f"✅ <b>[ប្រកាស]</b> កីឡាករ <b>{matched_name}</b> បានទូទាត់ប្រាក់រួចរាល់! អាតមីនសូមអរគុណច្រើន🙏", parse_mode="HTML")
+
+    # ១៥. ចុច ប៊ូតុងកត់ត្រាពិន្ទុរហ័ស
     elif data.startswith("score_"):
         score_code = data.split("score_")[1]
         if score_code == "undo":
@@ -1066,14 +1170,14 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             await query.answer(f"✅ បានកត់ត្រាពិន្ទុ {sets_a}-{sets_b}!", show_alert=True)
             await query.edit_message_text(res_msg, parse_mode="HTML")
 
-    # ១៣. ចុច ប៊ូតុង ⚔️ Match
+    # ១៦. ចុច ប៊ូតុង ⚔️ Match
     elif data == "btn_match":
         await query.answer("👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះប្រកួតថ្ងៃនេះ!", show_alert=True)
         header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ!"
         reply_msg = build_attendance_message(header_txt)
         await query.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ១៤. ចុច របៀបប្រើប្រាស់លម្អិត
+    # ១៧. ចុច របៀបប្រើប្រាស់លម្អិត
     elif data == "btn_help_guide":
         await query.answer("📖 សៀវភៅណែនាំប្រើប្រាស់លម្អិត", show_alert=False)
         guide_msg = "📖 <b>——— សៀវភៅណែនាំប្រើប្រាស់ BOT ———</b>\n\n" \
@@ -1087,6 +1191,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                     "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាងប្រកួត\n" \
                     "• ចុច <code>🔀 ចាប់គូ (Shuffle)</code> ដើម្បីចាប់គូស្វ័យប្រវត្ត\n" \
                     "• ចុច <code>📊 ស្ថិតិប្រកួត (Stats)</code> ដើម្បីមើលស្ថិតិឈ្នះ/ចាញ់\n" \
+                    "• ចុច <code>🏅 បោះឆ្នោត MVP</code> ដើម្បីបោះឆ្នោតកីឡាករឆ្នើម\n" \
                     "• ចុច <code>⚔️ Match</code> ដើម្បីប្រកាសកោះហៅសមាជិក\n\n" \
                     "🔹 <b>៣. បញ្ជាសំខាន់ៗ (Commands)៖</b>\n" \
                     "• /join <b>[ឈ្មោះ១], [ឈ្មោះ២]</b> ៖ ចុះឈ្មោះម្ដងច្រើននាក់\n" \
@@ -1095,8 +1200,8 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                     "• /info ៖ មើលព័ត៌មានម៉ោងប្រកួត និងទីតាំងតារាងទាំងអស់\n" \
                     "• /shuffle ៖ ចាប់គូស្វ័យប្រវត្ត (ស្មើដៃតាម Skill)\n" \
                     "• /manual [ក្រុមA] v [ក្រុមB] ៖ ចាប់គូដោយដៃ\n" \
-                    "• /setscore [សិតA] [សិតB] ៖ កត់ត្រាពិន្ទុប្រកួត (Ex: <code>/setscore 4 2</code>)\n" \
-                    "• /undo ៖ ដកពិន្ទុដែលវាយច្រឡំចេញវិញ\n" \
+                    "• /setscore [សិតA] [សិតB] ៖ កត់ត្រាពិន្ទុប្រកួត\n" \
+                    "• /mvp ៖ មើលលទ្ធផលបោះឆ្នោត MVP ប្រចាំថ្ងៃ\n" \
                     "• /stats ៖ មើលតារាងស្ថិតិឈ្នះ/ចាញ់ប្រចាំថ្ងៃ\n" \
                     "• /calculate [ថ្លៃតារាង] [ថ្លៃទឹក] ៖ គណនាប្រាក់ចំណាយចែកគ្នាបង់\n" \
                     "• /clear ៖ សម្អាតបញ្ជីវត្តមាន និងពិន្ទុប្រកួតទាំងអស់ឡើងវិញ\n\n" \
@@ -1107,7 +1212,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         ])
         await query.edit_message_text(guide_msg, parse_mode="HTML", reply_markup=back_keyboard)
 
-    # ១៥. ចុច ត្រឡប់ក្រោយ
+    # ១៨. ចុច ត្រឡប់ក្រោយ
     elif data == "menu_back":
         await query.answer("🔙 ត្រឡប់មកផ្ទាំងដើមវិញ!", show_alert=False)
         reply_msg = build_attendance_message()
@@ -1142,6 +1247,7 @@ def main() -> None:
     app.add_handler(CommandHandler("info", info_command))
     app.add_handler(CommandHandler("testmode", testmode_command))
     app.add_handler(CommandHandler("match", match_command))
+    app.add_handler(CommandHandler("mvp", mvp_command))
     
     # Message Handler (សម្រាប់ Reply ឈ្មោះមិត្តភក្តិ)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_reply_handler))
@@ -1149,7 +1255,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling smoothly...")
+    print("Bot started polling with MVP system, Payment Info, and Mark Paid button...")
     app.run_polling()
 
 if __name__ == "__main__":
