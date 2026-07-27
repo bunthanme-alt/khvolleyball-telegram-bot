@@ -82,92 +82,6 @@ times_database = {
     "2": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
     "3": "៦:០០ យប់ ដល់ ៨:០០ យប់",
     "4": "៦:០០ យប់ ដល់ ៧:៣០ យប់",
-    "5": "៥:០០ យប់ ដល់ ៧:
-```python
-import random
-import os
-import json
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading
-import datetime
-import time
-import requests
-import re
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-
-# ==========================================
-# ១. ប្រព័ន្ធបន្លំ Server សម្រាប់ Render
-# ==========================================
-class FakeServer(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"Bot is Alive 24/7!")
-        
-    def do_HEAD(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-
-def start_fake_server():
-    port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(('0.0.0.0', port), FakeServer)
-    print(f"Fake Server running on port {port}...")
-    server.serve_forever()
-
-# ==========================================
-# ២. DATABASE កីឡាករផ្លូវការ និងការកំណត់ Timezone
-# ==========================================
-players_data = {
-    "Yeun": "setter",
-    "BOY": "setter",
-    "VI SAL": "setter",
-    "Thorn Samay": 3,
-    "Phirom YEM": 3,
-    "Phatdon": 3,
-    "Thinhhhh (Wick)": 3,
-    "Sila Soem": 2,
-    "mean chaomey": 2,
-    "Suyngorn": 2,
-    "៤៣.ចេន រដ្ឋនី គ២": 2,
-    "Kong Channborey (គង់ ច័ន្ទបុរី)": 2,
-    "Mang Thona": 2,
-    "Lxy": 2,
-    "Aok Lyhour": 2,
-    "𝐌ρη-𝐖𝐚ν🇰🇭": 2,
-    "Khorn Salit": 2,
-    "ផល មិនា🇰🇭": 2,
-    "Em Bunthan": 2,
-    "LAY": 1,
-    "ផល បញ្ញា(Phal Banha)": 1,
-    "Seng Ngonn": 1,
-    "Vanna Poy": 1,
-    "Khai Titi(Libero)": 1
-}
-
-left_spikers_list = ["Bunthan(Sky)", "Lyhour", "Lxy", "Salit", "Aok Lyhour", "Khorn Salit", "Em Bunthan"]
-today_players = []
-waiting_list = []  
-current_teams = {"team_a": [], "team_b": []}
-player_stats = {}
-match_score = {"a": 0, "b": 0}
-
-previous_match_score = None  
-previous_player_stats = None  
-
-courts_database = {
-    "1": {"name": "តារាងបាល់ទះ (សាំហាន)", "link": "[https://maps.app.goo.gl/8pEx1RpuJ3uiGr256](https://maps.app.goo.gl/8pEx1RpuJ3uiGr256)"},
-    "2": {"name": "តារាងបាល់ទះ (សែនសុខ)", "link": "[https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic](https://maps.app.goo.gl/RxB9cjbE9B6hQ7d4A?g_st=ic)"},
-    "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "[https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc](https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc)"}
-}
-
-times_database = {
-    "1": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
-    "2": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
-    "3": "៦:០០ យប់ ដល់ ៨:០០ យប់",
-    "4": "៦:០០ យប់ ដល់ ៧:៣០ យប់",
     "5": "៥:០០ យប់ ដល់ ៧:០០ យប់",
     "6": "៥:០០ យប់ ដល់ ៧:៣០ យប់",
     "7": "៥:៣០ យប់ ដល់ ៧:០០ យប់",
@@ -285,10 +199,8 @@ def get_main_inline_keyboard():
     ]
     return InlineKeyboardMarkup(keyboard)
 
-# 🌟 អាប់ដេតបន្ថែមជម្រើសពិន្ទុសម្រាប់ ៣, ៤, ៥ និង ៦ សិត
 def get_score_keyboard():
     keyboard = [
-        # 3 សិត
         [
             InlineKeyboardButton("🏆 A ឈ្នះ (2-0)", callback_data="score_2_0"),
             InlineKeyboardButton("🏆 A ឈ្នះ (2-1)", callback_data="score_2_1"),
@@ -298,7 +210,6 @@ def get_score_keyboard():
             InlineKeyboardButton("🏆 B ឈ្នះ (0-2)", callback_data="score_0_2"),
             InlineKeyboardButton("🏆 B ឈ្នះ (1-2)", callback_data="score_1_2")
         ],
-        # ៤ ដល់ ៥ សិត
         [
             InlineKeyboardButton("🏆 A ឈ្នះ (3-0)", callback_data="score_3_0"),
             InlineKeyboardButton("🏆 A ឈ្នះ (3-1)", callback_data="score_3_1"),
@@ -309,7 +220,6 @@ def get_score_keyboard():
             InlineKeyboardButton("🏆 B ឈ្នះ (1-3)", callback_data="score_1_3"),
             InlineKeyboardButton("🏆 B ឈ្នះ (2-3)", callback_data="score_2_3")
         ],
-        # ៦ សិត, ស្មើ និង Undo
         [
             InlineKeyboardButton("🏆 A (4-1)", callback_data="score_4_1"),
             InlineKeyboardButton("🏆 A (4-2)", callback_data="score_4_2"),
@@ -1134,7 +1044,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         msg = build_stats_text()
         await query.message.reply_text(msg, parse_mode="HTML")
 
-    # ១២. 🌟 ចុច ប៊ូតុងកត់ត្រាពិន្ទុរហ័ស (គាំទ្ររហូតដល់ ៦ សិត)
+    # ១២. ចុច ប៊ូតុងកត់ត្រាពិន្ទុរហ័ស (គាំទ្ររហូតដល់ ៦ សិត)
     elif data.startswith("score_"):
         score_code = data.split("score_")[1]
         if score_code == "undo":
@@ -1239,7 +1149,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with Multi-Set Scoring buttons (up to 6 sets)...")
+    print("Bot started polling smoothly...")
     app.run_polling()
 
 if __name__ == "__main__":
