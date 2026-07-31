@@ -3,44 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>កំណត់កាលបរិច្ឆេទ និងម៉ោងប្រកួត</title>
+    <title>កំណត់ពេលប្រកួតបាល់ទះ</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: 'Khmer OS Battambang', sans-serif; background-color: #f8f9fa; text-align: center; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 320px; text-align: left; }
-        h3 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
-        p { color: #7f8c8d; font-size: 13px; text-align: center; margin-bottom: 20px; }
-        label { font-size: 13px; font-weight: bold; color: #34495e; display: block; margin-top: 10px; }
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #f4f6f9);
+            --text-color: var(--tg-theme-text-color, #2c3e50);
+            --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+            --button-bg: var(--tg-theme-button-color, #27ae60);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --accent-color: #3498db;
+        }
+
+        body {
+            font-family: 'Khmer OS Battambang', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 340px;
+            text-align: left;
+        }
+
+        .header-icon {
+            font-size: 32px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        h3 {
+            text-align: center;
+            margin: 0 0 4px 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-color);
+        }
+
         input[type="date"], input[type="time"] {
-            width: 100%; padding: 10px; font-size: 16px; font-weight: bold; text-align: center; border-radius: 8px; border: 2px solid #3498db; background-color: #ecf0f1; color: #2c3e50; box-sizing: border-box; outline: none; margin-top: 4px;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            background-color: rgba(0, 0, 0, 0.02);
+            color: var(--text-color);
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.3s ease;
         }
-        button { 
-            background-color: #27ae60; color: white; border: none; padding: 14px 20px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 25px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3);
+
+        input[type="date"]:focus, input[type="time"]:focus {
+            border-color: var(--accent-color);
+            background-color: transparent;
         }
-        button:active { background-color: #219653; transform: scale(0.98); }
+
+        .submit-btn {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .submit-btn:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h3>🗓️ កំណត់ពេលប្រកួត</h3>
-        <p>ជ្រើសរើសថ្ងៃ និងម៉ោងប្រកួត៖</p>
+
+    <div class="container">
+        <div class="header-icon">🏐</div>
+        <h3>កំណត់ពេលប្រកួត</h3>
+        <div class="subtitle">ជ្រើសរើសថ្ងៃ និងម៉ោងមិត្តភាពកីឡា</div>
         
-        <label>📅 កាលបរិច្ឆេទ (Date):</label>
-        <input type="date" id="matchDate">
+        <div class="form-group">
+            <label>📅 កាលបរិច្ឆេទ (Date)</label>
+            <input type="date" id="matchDate">
+        </div>
 
-        <label>🟢 ម៉ោងចាប់ផ្តើម (From):</label>
-        <input type="time" id="timeFrom" value="18:30">
+        <div class="form-group">
+            <label>🟢 ម៉ោងចាប់ផ្តើម (From)</label>
+            <input type="time" id="timeFrom" value="18:30">
+        </div>
 
-        <label>🔴 ម៉ោងបញ្ចប់ (End):</label>
-        <input type="time" id="timeEnd" value="20:30">
+        <div class="form-group">
+            <label>🔴 ម៉ោងបញ្ចប់ (End)</label>
+            <input type="time" id="timeEnd" value="20:30">
+        </div>
 
-        <button onclick="submitData()">បញ្ជាក់ការកំណត់ (Save)</button>
+        <button class="submit-btn" onclick="submitData()">បញ្ជាក់ការកំណត់ (Save)</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
+        // កំណត់ថ្ងៃខែស្វ័យប្រវត្តជាថ្ងៃនេះ
         document.getElementById('matchDate').valueAsDate = new Date();
 
         function submitData() {
@@ -49,7 +149,7 @@
             let endVal = document.getElementById("timeEnd").value;
             
             if(!dateVal || !fromVal || !endVal) {
-                alert("⚠️ សូមជ្រើសរើសថ្ងៃ និងម៉ោងឱ្យបានត្រឹមត្រូវ!");
+                alert("⚠️ សូមបំពេញថ្ងៃ និងម៉ោងឱ្យបានត្រឹមត្រូវ!");
                 return;
             }
 
@@ -60,8 +160,6 @@
             let finalResult = `DATE:${formattedDate} | TIME:${formattedFrom} - ${formattedEnd}`;
 
             if (tg && tg.sendData) {
-                // 🌟 បង្ហាញ Alert មុនពេលបញ្ជូនទិន្នន័យ
-                alert("✅ បានកំណត់ថ្ងៃ និងម៉ោងជោគជ័យ!");
                 tg.sendData(finalResult);
                 tg.close();
             } else {
