@@ -521,7 +521,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 8. MAIN FUNCTION
 # ==========================================
 def main():
-    token = "8066577030:AAEq3L0j0AhqWX6WFrodP5Yk4PLnNxR3WP8"
+    token = "7908903721:AAEJ_GNTKHthe6KJtjyGBVIXQWkTA_GTDJE"
     load_state()
     threading.Thread(target=start_fake_server, daemon=True).start()
     
