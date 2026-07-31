@@ -899,7 +899,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 # ៩. MAIN FUNCTION
 # ==========================================
 def main() -> None:
-    token = "7908903721:AAEJ_GNTKHthe6KJtjyGBVIXQWkTA_GTDJE"
+    token = "8066577030:AAEq3L0j0AhqWX6WFrodP5Yk4PLnNxR3WP8"
     
     load_state()
     
