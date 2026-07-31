@@ -68,9 +68,8 @@ current_teams = {"team_a": [], "team_b": []}
 player_stats = {}
 match_score = {"a": 0, "b": 0}
 
-# 🌟 ប្រព័ន្ធបន្ថែមសម្រាប់ MVP និងការទូទាត់
-mvp_votes = {} # {voter_id: voted_player_name}
-paid_players = set() # {player_name}
+mvp_votes = {} 
+paid_players = set() 
 
 previous_match_score = None  
 previous_player_stats = None  
@@ -81,20 +80,17 @@ courts_database = {
     "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc"}
 }
 
+# 🌟 អាប់ដេតទម្រង់ម៉ោងរហ័សបែប 06:30 PM - 08:30 PM
 times_database = {
-    "1": "៦:៣០ យប់ ដល់ ៨:៣០ យប់",
-    "2": "៦:៣០ យប់ ដល់ ៨:០០ យប់",
-    "3": "៦:០០ យប់ ដល់ ៨:០០ យប់",
-    "4": "៦:០០ យប់ ដល់ ៧:៣០ យប់",
-    "5": "៥:០០ យប់ ដល់ ៧:០០ យប់",
-    "6": "៥:០០ យប់ ដល់ ៧:៣០ យប់",
-    "7": "៥:៣០ យប់ ដល់ ៧:០០ យប់",
-    "8": "៥:៣០ យប់ ដល់ ៧:៣០ យប់",
-    "9": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក/រសៀល)"
+    "1": "06:30 PM - 08:30 PM",
+    "2": "06:30 PM - 08:00 PM",
+    "3": "06:00 PM - 08:00 PM",
+    "4": "05:30 PM - 07:30 PM",
+    "5": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក/រសៀល)"
 }
 
 selected_court_key = None
-selected_time_key = None  
+custom_time_text = None  
 pending_friend_join = {}  
 ICT = datetime.timezone(datetime.timedelta(hours=7))
 
@@ -115,8 +111,9 @@ def save_state():
         "player_stats": player_stats,
         "match_score": match_score,
         "selected_court_key": selected_court_key,
-        "selected_time_key": selected_time_key,
-        "paid_players": list(paid_players)
+        "custom_time_text": custom_time_text,
+        "paid_players": list(paid_players),
+        "mvp_votes": mvp_votes
     }
     
     if UPSTASH_URL and UPSTASH_TOKEN:
@@ -138,7 +135,7 @@ def save_state():
         print(f"⚠️ [STATE ERROR] Could not save local state: {e}")
 
 def load_state():
-    global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, selected_time_key, paid_players
+    global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, custom_time_text, paid_players, mvp_votes
     
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
@@ -155,8 +152,9 @@ def load_state():
                     player_stats = data.get("player_stats", {})
                     match_score = data.get("match_score", {"a": 0, "b": 0})
                     selected_court_key = data.get("selected_court_key")
-                    selected_time_key = data.get("selected_time_key")
+                    custom_time_text = data.get("custom_time_text")
                     paid_players = set(data.get("paid_players", []))
+                    mvp_votes = data.get("mvp_votes", {})
                     print("🔄 [DATA] State restored from Upstash Redis Cloud!")
                     return
         except Exception as e:
@@ -172,8 +170,9 @@ def load_state():
                 player_stats = data.get("player_stats", {})
                 match_score = data.get("match_score", {"a": 0, "b": 0})
                 selected_court_key = data.get("selected_court_key")
-                selected_time_key = data.get("selected_time_key")
+                custom_time_text = data.get("custom_time_text")
                 paid_players = set(data.get("paid_players", []))
+                mvp_votes = data.get("mvp_votes", {})
                 print("🔄 [DATA] State restored from Local Backup State File!")
         except Exception as e:
             print(f"⚠️ [STATE ERROR] Could not load local state: {e}")
@@ -260,8 +259,8 @@ def build_attendance_message(header_txt=""):
         
     reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n"
 
-    if selected_time_key is not None and selected_time_key in times_database:
-        reply_msg += f"⏰ <b>ម៉ោងប្រកួត៖</b> <code> {times_database[selected_time_key]} </code>\n🟢 [កំណត់រួចរាល់]\n"
+    if custom_time_text:
+        reply_msg += f"⏰ <b>ម៉ោងប្រកួត៖</b> <code> {custom_time_text} </code>\n🟢 [កំណត់រួចរាល់]\n"
     else:
         reply_msg += "⏰ <b>ម៉ោងប្រកួត៖</b> 🟡 [មិនទាន់ជ្រើសរើសម៉ោង]\n"
                 
@@ -643,7 +642,7 @@ async def testmode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, selected_time_key, player_stats, mvp_votes, paid_players
+    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, custom_time_text, player_stats, mvp_votes, paid_players
     today_players = []
     waiting_list = []
     previous_match_score = None
@@ -651,7 +650,7 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_teams = {"team_a": [], "team_b": []}
     match_score = {"a": 0, "b": 0}
     selected_court_key = None
-    selected_time_key = None
+    custom_time_text = None
     player_stats = {}
     mvp_votes = {}
     paid_players = set()
@@ -659,13 +658,13 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន និងពិន្ទុប្រកួតរួចរាល់!")
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global match_score, previous_match_score, previous_player_stats, player_stats, selected_court_key, selected_time_key
+    global match_score, previous_match_score, previous_player_stats, player_stats, selected_court_key, custom_time_text
     match_score = {"a": 0, "b": 0}
     previous_match_score = None
     previous_player_stats = None
     player_stats = {}
     selected_court_key = None
-    selected_time_key = None
+    custom_time_text = None
     
     for p in today_players:
         player_stats[p] = {"win": 0, "loss": 0}
@@ -785,7 +784,51 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = build_stats_text()
     await update.message.reply_text(msg, parse_mode="HTML")
 
-# 🌟 មុខងារ /calculate អាប់ដេតបន្ថែមព័ត៌មាន QR / គណនីវេរប្រាក់ (ដាក់ថាមិនទាន់មាន)
+async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args
+    name_query = " ".join(args).strip() if args else f"{update.message.from_user.first_name} {update.message.from_user.last_name or ''}".strip()
+    
+    matched_name = None
+    for p in player_stats.keys():
+        if name_query.lower() in p.lower():
+            matched_name = p
+            break
+            
+    if not matched_name:
+        for p in players_data.keys():
+            if name_query.lower() in p.lower():
+                matched_name = p
+                player_stats[matched_name] = {"win": 0, "loss": 0}
+                break
+                
+    if not matched_name:
+        await update.message.reply_text(f"❌ រកមិនឃើញប្រវត្តិរូបរបស់កីឡាករ [{name_query}] ទេ។")
+        return
+        
+    stat = player_stats.get(matched_name, {"win": 0, "loss": 0})
+    total_sets = stat["win"] + stat["loss"]
+    win_rate = (stat["win"] / total_sets * 100) if total_sets > 0 else 0.0
+    
+    role_or_level = players_data.get(matched_name, "កម្រិត ១")
+    if role_or_level == "setter":
+        role_txt = "🌟 ប៉ះសេហ្ស៊ីន (Setter)"
+    else:
+        role_txt = f"⭐️ កម្រិតកីឡាករ៖ {role_or_level}"
+        
+    mvp_count = sum(1 for v in mvp_votes.values() if v.lower() == matched_name.lower())
+    
+    profile_msg = f"👤 <b>ប្រវត្តិរូបកីឡាករ (PLAYER PROFILE)</b>\n" \
+                  f"<code>----------------------------------</code>\n" \
+                  f"📌 <b>ឈ្មោះ៖</b> {matched_name}\n" \
+                  f"🏅 <b>តួនាទី/កម្រិត៖</b> {role_txt}\n" \
+                  f"🔥 <b>សិតសរុបបានលេង៖</b> {total_sets} សិត\n" \
+                  f"🏆 <b>ឈ្នះ៖</b> {stat['win']} សិត | ❌ <b>ចាញ់៖</b> {stat['loss']} សិត\n" \
+                  f"📈 <b>ភាគរយឈ្នះ (Win Rate)៖</b> {win_rate:.1f}%\n" \
+                  f"🌟 <b>ពាន MVP ប្រចាំថ្ងៃ៖</b> {mvp_count} ដង\n" \
+                  f"<code>----------------------------------</code>"
+                  
+    await update.message.reply_text(profile_msg, parse_mode="HTML")
+
 async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not current_teams["team_a"]:
         await update.message.reply_text("❌ មិនទាន់មានការបែងចែកក្រុមនៅឡើយទេ!")
@@ -858,27 +901,31 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(status_msg, parse_mode="HTML")
 
 async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global selected_time_key
+    global custom_time_text
     args = context.args
-    if not args or args[0] not in times_database:
-        msg = "❌ របៀបប្រើ៖ វាយ /settime [លេខកូដ] ដើម្បីជ្រើសរើសម៉ោងប្រគួត៖\n\n"
+    if not args:
+        msg = "❌ របៀបប្រើ៖ វាយ `/settime [លេខកូដ]` ឬ `/settime [អត្ថបទម៉ោងតាមចិត្ត]`\n\n" \
+              "<b>ម៉ោងរហ័ស៖</b>\n"
         for key, time_val in times_database.items():
             msg += f"👉 /settime {key} ➡️ {time_val}\n"
-        await update.message.reply_text(msg)
+        msg += "\n<b>ឧទាហរណ៍វាយដោយដៃ៖</b> `/settime 07:00 PM - 09:00 PM`"
+        await update.message.reply_text(msg, parse_mode="HTML")
         return
-    selected_time_key = args[0]
+        
+    if args[0] in times_database:
+        custom_time_text = times_database[args[0]]
+    else:
+        custom_time_text = " ".join(args)
+        
     save_state()
-    
-    chosen_time_text = times_database[selected_time_key]
-    await update.message.reply_text(f"⏰ បានជ្រើសរើសការប្រគួតនៅម៉ោង៖ {chosen_time_text} ដោយជោគជ័យ!")
+    await update.message.reply_text(f"⏰ បានកំណត់ម៉ោងប្រកួត៖ <code>{custom_time_text}</code> ដោយជោគជ័យ!", parse_mode="HTML")
 
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
                f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n"
     
-    if selected_time_key is not None:
-        play_time_info = times_database[selected_time_key]
-        info_msg += f"⏰ <b>ម៉ោងប្រគួតបច្ចុប្បន្ន៖</b> {play_time_info}\n"
+    if custom_time_text is not None:
+        info_msg += f"⏰ <b>ម៉ោងប្រកួតបច្ចុប្បន្ន៖</b> {custom_time_text}\n"
         
     info_msg += "<code>----------------------------------\n" \
                 "      🏟️  ទីតាំងតារាងបាល់ទះ  🏟️      \n\n</code>"
@@ -907,7 +954,6 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
-# 🌟 មុខងារ Command /mvp សម្រាប់មើលលទ្ធផលបោះឆ្នោត MVP
 async def mvp_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not mvp_votes:
         await update.message.reply_text("🏅 មិនទាន់មានការបោះឆ្នោតជ្រើសរើស MVP ថ្ងៃនេះនៅឡើយទេ។ ចុចប៊ូតុង [ 🏅 បោះឆ្នោត MVP ] ដើម្បីបោះឆ្នោត!")
@@ -931,7 +977,7 @@ async def mvp_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode="HTML")
 
 # ==========================================
-# ៧. MESSAGE HANDLER សម្រាប់ REPLIES (JOIN ឱ្យមិត្ត)
+# ៧. MESSAGE HANDLER សម្រាប់បង្កើត JOIN ឱ្យមិត្ត
 # ==========================================
 async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
@@ -954,9 +1000,8 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     user_name = f"{user.first_name} {user.last_name or ''}".strip()
     data = query.data
     
-    global selected_time_key, selected_court_key, match_score, previous_match_score, player_stats, previous_player_stats, mvp_votes, paid_players
+    global selected_time_key, custom_time_text, selected_court_key, match_score, previous_match_score, player_stats, previous_player_stats, mvp_votes, paid_players
 
-    # ១. ចុច Join ខ្លួនឯង
     if data == "btn_join_self":
         success, status_txt = process_user_join_multiple(user_name)
         if "មានក្នុងបញ្ជីរួចហើយ" in status_txt:
@@ -966,7 +1011,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ២. ចុច Leave ខ្លួនឯង
     elif data == "btn_leave_self":
         success, status_txt = process_user_leave(user_name)
         if not success:
@@ -976,13 +1020,11 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៣. ចុច Join មិត្តភក្តិ
     elif data == "btn_join_friend":
         await query.answer("✍️ សូម Reply វាយឈ្មោះមិត្តភក្តិរបស់អ្នក!", show_alert=False)
         pending_friend_join[user_id] = True
         await query.message.reply_text("✍️ <b>សូម Reply វាយឈ្មោះមិត្តភក្តិរបស់អ្នក៖</b>\n👉 អាចវាយ <b>ម្ដងច្រើនឈ្មោះ</b> ដោយប្រើសញ្ញាក្បៀស <code>,</code> ឧទាហរណ៍៖ <code>Boy, Tinhhh, Don</code>", parse_mode="HTML")
 
-    # ៤. ចុច Leave មិត្តភក្តិ
     elif data == "btn_leave_friend":
         all_active = today_players + waiting_list
         if not all_active:
@@ -1001,7 +1043,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_markup=InlineKeyboardMarkup(remove_keyboard)
         )
 
-    # ៥. ដកឈ្មោះមិត្តភក្តិដែលបានជ្រើសរើសតាម Index
     elif data.startswith("rf_"):
         try:
             idx = int(data.split("_")[1])
@@ -1021,7 +1062,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_msg = build_attendance_message()
             await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៦. ចុច Menu ម៉ោង
     elif data == "menu_time":
         await query.answer("⏰ សូមជ្រើសរើសម៉ោងប្រកួត!", show_alert=False)
         time_keyboard = []
@@ -1037,23 +1077,20 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         time_keyboard.append([InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")])
         
         await query.edit_message_text(
-            "⏰ <b>សូមជ្រើសរើសម៉ោងប្រកួតខាងក្រោម៖</b>", 
+            "⏰ <b>សូមជ្រើសរើសម៉ោងប្រកួតខាងក្រោម៖</b>\n*(ចំណាំ៖ អាចវាយ /settime [06:00 PM - 08:00 PM] ក្នុងគ្រុបបានដែរ)*", 
             parse_mode="HTML", 
             reply_markup=InlineKeyboardMarkup(time_keyboard)
         )
 
-    # ៧. ចុច ដូរម៉ោង
     elif data.startswith("settime_"):
         time_key = data.split("_")[1]
-        selected_time_key = time_key
+        custom_time_text = times_database[time_key]
         save_state()
-        time_txt = times_database[selected_time_key]
-        await query.answer(f"⏰ បានជ្រើសរើសម៉ោង៖ {time_txt}!", show_alert=True)
-        status_txt = f"⏰ បានជ្រើសរើសម៉ោងប្រកួត៖ {time_txt} ដោយជោគជ័យ!"
+        await query.answer(f"⏰ បានជ្រើសរើសម៉ោង៖ {custom_time_text}!", show_alert=True)
+        status_txt = f"⏰ បានជ្រើសរើសម៉ោងប្រកួត៖ {custom_time_text} ដោយជោគជ័យ!"
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៨. ចុច Menu តារាង
     elif data == "menu_court":
         await query.answer("🏟️ សូមជ្រើសរើសតារាងប្រកួត!", show_alert=False)
         court_keyboard = []
@@ -1067,7 +1104,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_markup=InlineKeyboardMarkup(court_keyboard)
         )
 
-    # ៩. ចុច កក់តារាង
     elif data.startswith("setcourt_"):
         court_key = data.split("_")[1]
         selected_court_key = court_key
@@ -1078,7 +1114,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ១០. ចុច ប៊ូតុង 🔀 ចាប់គូ (Shuffle)
     elif data == "btn_shuffle":
         msg, err = execute_shuffle()
         if err:
@@ -1087,13 +1122,11 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             await query.answer("🔀 បានចាប់គូស្វ័យប្រវត្តជោគជ័យ!", show_alert=True)
             await query.message.reply_text(msg, parse_mode="HTML", reply_markup=get_score_keyboard())
 
-    # ១១. ចុច ប៊ូតុង 📊 ស្ថិតិប្រកួត (Stats)
     elif data == "btn_stats":
         await query.answer("📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ", show_alert=False)
         msg = build_stats_text()
         await query.message.reply_text(msg, parse_mode="HTML")
 
-    # ១២. 🌟 ចុច ប៊ូតុង 🏅 បោះឆ្នោត MVP ប្រចាំថ្ងៃ
     elif data == "btn_vote_mvp":
         if not today_players:
             await query.answer("💡 មិនទាន់មានបញ្ជីវត្តមានសម្រាប់បោះឆ្នោត MVP ទេ!", show_alert=True)
@@ -1111,7 +1144,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_markup=InlineKeyboardMarkup(mvp_keyboard)
         )
 
-    # ១៣. 🌟 បោះឆ្នោតឱ្យបេក្ខជន MVP
     elif data.startswith("cast_mvp_"):
         try:
             idx = int(data.split("_")[2])
@@ -1120,7 +1152,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                 mvp_votes[user_id] = candidate_name
                 await query.answer(f"🎉 អ្នកបានបោះឆ្នោតឱ្យ [{candidate_name}] ជា MVP រួចរាល់!", show_alert=True)
                 
-                # បង្ហាញលទ្ធផល MVP បច្ចុប្បន្ន
                 vote_counts = {}
                 for candidate in mvp_votes.values():
                     vote_counts[candidate] = vote_counts.get(candidate, 0) + 1
@@ -1133,7 +1164,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         except Exception:
             await query.answer("💡 មានបញ្ហាក្នុងការបោះឆ្នោត!", show_alert=True)
 
-    # ១៤. 🌟 ចុច ប៊ូតុងទូទាត់ប្រាក់ (Mark Paid)
     elif data == "btn_mark_paid":
         matched_name = None
         for p in today_players:
@@ -1148,7 +1178,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         await query.answer(f"✅ ប្រព័ន្ធបានកត់ត្រាការទូទាត់ប្រាក់របស់ [{matched_name}] រួចរាល់!", show_alert=True)
         await query.message.reply_text(f"✅ <b>[ប្រកាស]</b> កីឡាករ <b>{matched_name}</b> បានទូទាត់ប្រាក់រួចរាល់! អាតមីនសូមអរគុណច្រើន🙏", parse_mode="HTML")
 
-    # ១៥. ចុច ប៊ូតុងកត់ត្រាពិន្ទុរហ័ស
     elif data.startswith("score_"):
         score_code = data.split("score_")[1]
         if score_code == "undo":
@@ -1170,14 +1199,12 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             await query.answer(f"✅ បានកត់ត្រាពិន្ទុ {sets_a}-{sets_b}!", show_alert=True)
             await query.edit_message_text(res_msg, parse_mode="HTML")
 
-    # ១៦. ចុច ប៊ូតុង ⚔️ Match
     elif data == "btn_match":
         await query.answer("👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះប្រកួតថ្ងៃនេះ!", show_alert=True)
         header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ!"
         reply_msg = build_attendance_message(header_txt)
         await query.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ១៧. ចុច របៀបប្រើប្រាស់លម្អិត
     elif data == "btn_help_guide":
         await query.answer("📖 សៀវភៅណែនាំប្រើប្រាស់លម្អិត", show_alert=False)
         guide_msg = "📖 <b>——— សៀវភៅណែនាំប្រើប្រាស់ BOT ———</b>\n\n" \
@@ -1187,7 +1214,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                     "• ចុច <code>❌ Leave ខ្លួនឯង</code> ដើម្បីដកឈ្មោះចេញវិញ\n" \
                     "• ចុច <code>➖ Leave មិត្តភក្តិ</code> ដើម្បីជ្រើសរើសដកឈ្មោះមិត្តភក្តិ\n\n" \
                     "🔹 <b>២. ការកំណត់ និងការចាប់គូប្រកួត៖</b>\n" \
-                    "• ចុច <code>⏰ ជ្រើសរើសម៉ោង</code> ដើម្បីដូរម៉ោងប្រកួត\n" \
+                    "• ចុច <code>⏰ ជ្រើសរើសម៉ោង</code> ឬវាយ <code>/settime [06:30 PM - 08:30 PM]</code>\n" \
                     "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាងប្រកួត\n" \
                     "• ចុច <code>🔀 ចាប់គូ (Shuffle)</code> ដើម្បីចាប់គូស្វ័យប្រវត្ត\n" \
                     "• ចុច <code>📊 ស្ថិតិប្រកួត (Stats)</code> ដើម្បីមើលស្ថិតិឈ្នះ/ចាញ់\n" \
@@ -1195,13 +1222,15 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                     "• ចុច <code>⚔️ Match</code> ដើម្បីប្រកាសកោះហៅសមាជិក\n\n" \
                     "🔹 <b>៣. បញ្ជាសំខាន់ៗ (Commands)៖</b>\n" \
                     "• /join <b>[ឈ្មោះ១], [ឈ្មោះ២]</b> ៖ ចុះឈ្មោះម្ដងច្រើននាក់\n" \
+                    "• /profile [ឈ្មោះ] ៖ មើលប្រវត្តិរូប និងស្ថិតិផ្ទាល់ខ្លួន\n" \
+                    "• /settime <b>[06:30 PM - 08:30 PM]</b> ៖ កំណត់ម៉ោងតាមចិត្ត\n" \
                     "• /match ៖ ប្រកាសកោះហៅសមាជិកចូលរួមប្រកួតថ្ងៃនេះ\n" \
                     "• /list ៖ មើលបញ្ជីវត្តមាន និងកាតប្រកួតបច្ចុប្បន្ន\n" \
                     "• /info ៖ មើលព័ត៌មានម៉ោងប្រកួត និងទីតាំងតារាងទាំងអស់\n" \
                     "• /shuffle ៖ ចាប់គូស្វ័យប្រវត្ត (ស្មើដៃតាម Skill)\n" \
                     "• /manual [ក្រុមA] v [ក្រុមB] ៖ ចាប់គូដោយដៃ\n" \
                     "• /setscore [សិតA] [សិតB] ៖ កត់ត្រាពិន្ទុប្រកួត\n" \
-                    "• /mvp ៖ មើលលទ្ធផលបោះឆ្នោត MVP ប្រចាំថ្ងៃ\n" \
+                    "• /undo ៖ ដកពិន្ទុដែលវាយច្រឡំចេញវិញ\n" \
                     "• /stats ៖ មើលតារាងស្ថិតិឈ្នះ/ចាញ់ប្រចាំថ្ងៃ\n" \
                     "• /calculate [ថ្លៃតារាង] [ថ្លៃទឹក] ៖ គណនាប្រាក់ចំណាយចែកគ្នាបង់\n" \
                     "• /clear ៖ សម្អាតបញ្ជីវត្តមាន និងពិន្ទុប្រកួតទាំងអស់ឡើងវិញ\n\n" \
@@ -1212,7 +1241,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         ])
         await query.edit_message_text(guide_msg, parse_mode="HTML", reply_markup=back_keyboard)
 
-    # ១៨. ចុច ត្រឡប់ក្រោយ
     elif data == "menu_back":
         await query.answer("🔙 ត្រឡប់មកផ្ទាំងដើមវិញ!", show_alert=False)
         reply_msg = build_attendance_message()
@@ -1241,6 +1269,7 @@ def main() -> None:
     app.add_handler(CommandHandler("setscore", setscore_command))
     app.add_handler(CommandHandler("undo", undo_command))
     app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("profile", profile_command))
     app.add_handler(CommandHandler("calculate", calculate_command))
     app.add_handler(CommandHandler("setmap", setmap_command))
     app.add_handler(CommandHandler("settime", settime_command))
@@ -1255,7 +1284,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with MVP system, Payment Info, and Mark Paid button...")
+    print("Bot started polling with 06:30 PM - 08:30 PM format enabled...")
     app.run_polling()
 
 if __name__ == "__main__":
