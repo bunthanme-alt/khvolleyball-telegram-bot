@@ -79,6 +79,7 @@ courts_database = {
 }
 
 selected_court_key = None
+custom_date_text = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=7))).strftime("%d/%m/%Y")
 custom_time_text = "06:30 PM - 08:30 PM"  
 pending_friend_join = {}  
 ICT = datetime.timezone(datetime.timedelta(hours=7))
@@ -100,6 +101,7 @@ def save_state():
         "player_stats": player_stats,
         "match_score": match_score,
         "selected_court_key": selected_court_key,
+        "custom_date_text": custom_date_text,
         "custom_time_text": custom_time_text,
         "mvp_votes": mvp_votes
     }
@@ -121,7 +123,7 @@ def save_state():
         print(f"⚠️ [STATE ERROR] {e}")
 
 def load_state():
-    global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, custom_time_text, mvp_votes
+    global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, custom_date_text, custom_time_text, mvp_votes
     
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
@@ -138,6 +140,7 @@ def load_state():
                     player_stats = data.get("player_stats", {})
                     match_score = data.get("match_score", {"a": 0, "b": 0})
                     selected_court_key = data.get("selected_court_key")
+                    custom_date_text = data.get("custom_date_text", datetime.datetime.now(ICT).strftime("%d/%m/%Y"))
                     custom_time_text = data.get("custom_time_text", "06:30 PM - 08:30 PM")
                     mvp_votes = data.get("mvp_votes", {})
                     return
@@ -154,6 +157,7 @@ def load_state():
                 player_stats = data.get("player_stats", {})
                 match_score = data.get("match_score", {"a": 0, "b": 0})
                 selected_court_key = data.get("selected_court_key")
+                custom_date_text = data.get("custom_date_text", datetime.datetime.now(ICT).strftime("%d/%m/%Y"))
                 custom_time_text = data.get("custom_time_text", "06:30 PM - 08:30 PM")
                 mvp_votes = data.get("mvp_votes", {})
         except Exception as e:
@@ -175,7 +179,7 @@ def get_main_inline_keyboard():
             InlineKeyboardButton("➖ Leave មិត្តភក្តិ", callback_data="btn_leave_friend")
         ],
         [
-            InlineKeyboardButton("⏰ កំណត់ម៉ោង (Web App)", web_app=WebAppInfo(url=web_app_url)),
+            InlineKeyboardButton("⏰ កំណត់ថ្ងៃ និងម៉ោង (Web App)", web_app=WebAppInfo(url=web_app_url)),
             InlineKeyboardButton("🏟️ ជ្រើសរើសតារាង", callback_data="menu_court")
         ],
         [
@@ -193,7 +197,6 @@ def get_main_inline_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 def get_score_keyboard():
-    # 🌟 ជម្រើសកត់ពិន្ទុរហ័សរហូតដល់ ៦ សិត (Supports up to 6 sets)
     keyboard = [
         [
             InlineKeyboardButton("🏆 A: 2-0", callback_data="score_2_0"),
@@ -229,14 +232,11 @@ def get_score_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 def build_attendance_message(header_txt=""):
-    now_kh = datetime.datetime.now(ICT)
-    date_str = now_kh.strftime("%d/%m/%Y")
-    
     reply_msg = ""
     if header_txt:
         reply_msg += f"{header_txt}\n\n"
         
-    reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {date_str}\n"
+    reply_msg += f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {custom_date_text}\n"
 
     if custom_time_text:
         reply_msg += f"⏰ <b>ម៉ោងប្រកួត៖</b> <code> {custom_time_text} </code>\n🟢 [កំណត់រួចរាល់]\n"
@@ -466,7 +466,7 @@ def execute_shuffle():
           f"🔹 <b>ក្រុម A:</b> {', '.join(format_a)}\n" \
           f"<code>----------------------------------</code>\n" \
           f"🔸 <b>ក្រុម B:</b> {', '.join(format_b)}\n\n" \
-          f"📢 ចុចប៊ូតុងខាងក្រោមដើម្បីកត់ត្រាពិន្ទុរហ័ស (រហូតដល់ ៦ សិត) ឬបោះឆ្នោត MVP!"
+          f"📢 ចុចប៊ូតុងខាងក្រោមដើម្បីកត់ត្រាពិន្ទុរហ័ស ឬបោះឆ្នោត MVP!"
     return msg, None
 
 def set_match_score(sets_a, sets_b):
@@ -562,7 +562,7 @@ async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, custom_time_text, player_stats, mvp_votes
+    global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, custom_date_text, custom_time_text, player_stats, mvp_votes
     today_players = []
     waiting_list = []
     previous_match_score = None
@@ -570,6 +570,7 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_teams = {"team_a": [], "team_b": []}
     match_score = {"a": 0, "b": 0}
     selected_court_key = None
+    custom_date_text = datetime.datetime.now(ICT).strftime("%d/%m/%Y")
     custom_time_text = "06:30 PM - 08:30 PM"
     player_stats = {}
     mvp_votes = {}
@@ -613,7 +614,8 @@ async def setmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_msg = "<code>   - ព័ត៌មានកីឡាបាល់ទះមិត្តភាពពេលល្ងាច -   \n\n</code>" \
                f"🏆 <b>ការប្រគួត៖</b> បាល់ទះមិត្តភាព និងសាមគ្គីភាព\n" \
-               f"⏰ <b>ម៉ោងប្រកួតបច្ចុប្បន្ន៖</b> {custom_time_text}\n" \
+               f"🗓️ <b>កាលបរិច្ឆេទ៖</b> {custom_date_text}\n" \
+               f"⏰ <b>ម៉ោងប្រកួត៖</b> {custom_time_text}\n" \
                "<code>----------------------------------\n" \
                "      🏟️  ទីតាំងតារាងបាល់ទះ  🏟️      \n\n</code>"
                
@@ -649,13 +651,24 @@ async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TY
         reply_msg = build_attendance_message(status_txt)
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-# 🌟 ទទួលទិន្នន័យម៉ោង From - End ពី Web App
+# 🌟 ទទួលទិន្នន័យ ថ្ងៃ និងម៉ោង ពី Web App
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global custom_time_text
+    global custom_date_text, custom_time_text
     if update.effective_message and update.effective_message.web_app_data:
-        custom_time_text = update.effective_message.web_app_data.data
+        raw_data = update.effective_message.web_app_data.data
+        # ទម្រង់ដែលផ្ញើមក៖ DATE:DD/MM/YYYY | TIME:06:30 PM - 08:30 PM
+        try:
+            parts = raw_data.split(" | ")
+            for p in parts:
+                if p.startswith("DATE:"):
+                    custom_date_text = p.replace("DATE:", "")
+                elif p.startswith("TIME:"):
+                    custom_time_text = p.replace("TIME:", "")
+        except Exception:
+            custom_time_text = raw_data
+            
         save_state()
-        await update.message.reply_text(f"⏰ បានកំណត់ម៉ោងថ្មីតាមរយៈ Web App ៖ <code>{custom_time_text}</code>", parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        await update.message.reply_text(f"🗓️⏰ បានកំណត់ពេលប្រកួតថ្មី:\n📅 ថ្ងៃ៖ <b>{custom_date_text}</b>\n⏰ ម៉ោង៖ <code>{custom_time_text}</code>", parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 # ==========================================
 # 8. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
@@ -668,7 +681,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     user_name = f"{user.first_name} {user.last_name or ''}".strip()
     data = query.data
     
-    global selected_court_key, match_score, previous_match_score, player_stats, previous_player_stats, custom_time_text, mvp_votes
+    global selected_court_key, match_score, previous_match_score, player_stats, previous_player_stats, custom_date_text, custom_time_text, mvp_votes
 
     # ១. ចុច Join ខ្លួនឯង
     if data == "btn_join_self":
@@ -841,7 +854,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                     "• ចុច <code>❌ Leave ខ្លួនឯង</code> ដើម្បីដកឈ្មោះចេញវិញ\n" \
                     "• ចុច <code>➖ Leave មិត្តភក្តិ</code> ដើម្បីជ្រើសរើសដកឈ្មោះមិត្តភក្តិ\n\n" \
                     "🔹 <b>២. ការកំណត់ និងការចាប់គូប្រកួត៖</b>\n" \
-                    "• ចុច <code>⏰ កំណត់ម៉ោង (Web App)</code> ដើម្បីអូសរើសម៉ោង From-End\n" \
+                    "• ចុច <code>⏰ កំណត់ថ្ងៃ និងម៉ោង (Web App)</code> ដើម្បីជ្រើសរើសថ្ងៃ និងម៉ោង From-End\n" \
                     "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាងប្រកួត\n" \
                     "• ចុច <code>🔀 ចាប់គូ (Shuffle)</code> ដើម្បីចាប់គូស្វ័យប្រវត្ត (គាំទ្ររហូតដល់ ៦ សិត)\n" \
                     "• ចុច <code>📊 ស្ថិតិប្រកួត (Stats)</code> ដើម្បីមើលស្ថិតិឈ្នះ/ចាញ់\n" \
@@ -902,7 +915,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot with 6 Sets Shuffle Score Options, MVP, and Stats Back Button is running smoothly...")
+    print("Bot with Custom Date, Time Web App, MVP, and 6-Set Options is running smoothly...")
     app.run_polling()
 
 if __name__ == "__main__":
