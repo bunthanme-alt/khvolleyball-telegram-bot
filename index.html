@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ជ្រើសរើសម៉ោងប្រកួត</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: 'Khmer OS Battambang', sans-serif; background-color: #f0f2f5; text-align: center; padding: 20px; }
+        h2 { color: #2c3e50; }
+        .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 20px; }
+        select { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; margin-top: 10px; }
+        button { background-color: #27ae60; color: white; border: none; padding: 14px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; }
+        button:hover { background-color: #219653; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>⏰ កំណត់ម៉ោងប្រកួតបាល់ទះ</h2>
+        <p>សូមជ្រើសរើសម៉ោងដែលត្រូវលេងល្ងាចនេះ៖</p>
+        <select id="matchTime">
+            <option value="06:30 PM - 08:30 PM">06:30 PM - 08:30 PM</option>
+            <option value="06:30 PM - 08:00 PM">06:30 PM - 08:00 PM</option>
+            <option value="06:00 PM - 08:00 PM">06:00 PM - 08:00 PM</option>
+            <option value="05:30 PM - 07:30 PM">05:30 PM - 07:30 PM</option>
+            <option value="🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក/រសៀល)">🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក/រសៀល)</option>
+        </select>
+        <button onclick="submitTime()">បញ្ជាក់ម៉ោង (Save)</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        function submitTime() {
+            let selectedTime = document.getElementById("matchTime").value;
+            tg.sendData(selectedTime);
+            tg.close();
+        }
+    </script>
+</body>
+</html>
