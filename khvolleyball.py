@@ -504,7 +504,7 @@ def set_match_score(sets_a, sets_b):
     if sets_a > sets_b:
         result_msg = f"🎉 លទ្ធផលសិតសរុប៖ ក្រុម A ឈ្នះក្រុម B ដោយពិន្ទុ {sets_a}-{sets_b}"
     elif sets_b > sets_a:
-        result_msg = f"🎉 លទ្ធផលសិតសរុប៖ ក្រុម B ឈ្នះក្រុម A ដោយពិន្ទុ {sets_b}-{sets_a}"
+        result_msg = f"🎉 លទ្ធផលសិតសរុប៖ ក្រុម B ឈ្នះក្រុម A ដោយពិន្ទុ {sets_b}-{sets_b}"
     else:
         result_msg = f"🤝 លទ្ធផលសិតសរុប៖ ក្រុមទាំងពីរស្មើគ្នា {sets_a}-{sets_b}"
         
@@ -657,7 +657,7 @@ async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TY
         reply_msg = build_attendance_message(status_txt)
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-# 🌟 ទទួលទិន្នន័យ ថ្ងៃ និងម៉ោង ពី Web App (ប្រើ Message Handler ត្រឹមត្រូវ ១០០%)
+# 🌟 ទទួលទិន្នន័យ ថ្ងៃ និងម៉ោង ពី Web App (ប្រើ Message Handler គ្រប់ប្រភេទទាំងឡាយ)
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global custom_date_text, custom_time_text
     if update.effective_message and update.effective_message.web_app_data:
@@ -674,12 +674,9 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             
         save_state()
         
-        # 🌟 Update ភ្លាមៗ (Edit Message) មិនរុញសារឡើងលើ
-        reply_msg = build_attendance_message(f"✅ បានកំណត់ពេលប្រកួតថ្មី:\n📅 ថ្ងៃ៖ {custom_date_text} | ⏰ ម៉ោង៖ {custom_time_text}")
-        try:
-            await update.effective_message.edit_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
-        except Exception:
-            await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        # 🌟 បង្កើតសារថ្មីបញ្ជាក់ការកំណត់ថ្ងៃ និងម៉ោងភ្លាមៗ
+        reply_msg = build_attendance_message(f"✅ បានកំណត់ពេលប្រកួតថ្មីជោគជ័យ!\n📅 ថ្ងៃ៖ {custom_date_text} | ⏰ ម៉ោង៖ {custom_time_text}")
+        await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 # ==========================================
 # 8. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
@@ -739,7 +736,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_markup=InlineKeyboardMarkup(remove_keyboard)
         )
 
-    # ៥. ដកឈ្មោះមិត្តភក្តិដែលបានជ្រើសរើសតាម Index
+    # 5. ដកឈ្មោះមិត្តភក្តិដែលបានជ្រើសរើសតាម Index
     elif data.startswith("rf_"):
         try:
             idx = int(data.split("_")[1])
@@ -759,7 +756,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_msg = build_attendance_message()
             await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៦. ចុច Menu តារាង
+    # 6. ចុច Menu តារាង
     elif data == "menu_court":
         await query.answer("🏟️ សូមជ្រើសរើសតារាងប្រកួត!", show_alert=False)
         court_keyboard = []
@@ -773,7 +770,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_markup=InlineKeyboardMarkup(court_keyboard)
         )
 
-    # ៧. ចុច កក់តារាង
+    # 7. ចុច កក់តារាង
     elif data.startswith("setcourt_"):
         court_key = data.split("_")[1]
         selected_court_key = court_key
@@ -890,7 +887,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         ])
         await query.edit_message_text(guide_msg, parse_mode="HTML", reply_markup=back_keyboard)
 
-    # 13. ចុច ត្រឡប់ក្រោយ (🌟 Update ភ្លាមៗមិនរុញសារឡើងលើ)
+    # 13. ចុច ត្រឡប់ក្រោយ
     elif data == "menu_back":
         await query.answer("🔙 ត្រឡប់មកផ្ទាំងដើមវិញ!", show_alert=False)
         reply_msg = build_attendance_message()
@@ -919,14 +916,14 @@ def main() -> None:
     app.add_handler(CommandHandler("info", info_command))
     app.add_handler(CommandHandler("match", match_command))
     
-    # Message Handlers
-    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, web_app_data_handler))
+    # Message Handlers (🌟 ប្រើ filters.ALL ឬ filters.UpdateType.WEB_APP_DATA ដើម្បីចាប់ Web App Data ឱ្យជាប់ ១០០%)
+    app.add_handler(MessageHandler(filters.UpdateType.WEB_APP_DATA, web_app_data_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_reply_handler))
     
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot with instant Web App Update, Alert, and Clean Back is running smoothly...")
+    print("Bot with robust Web App Data handler and Alert is running smoothly...")
     app.run_polling()
 
 if __name__ == "__main__":
