@@ -10,38 +10,9 @@
         .box { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 320px; text-align: left; }
         h3 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
         p { color: #7f8c8d; font-size: 13px; text-align: center; margin-bottom: 20px; }
-        
         label { font-size: 14px; font-weight: bold; color: #34495e; display: block; margin-top: 10px; }
-        
-        /* 🌟 កាដ្រូអូសរើសម៉ោង From & End */
-        input[type="time"] {
-            width: 100%;
-            padding: 12px;
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            border-radius: 8px;
-            border: 2px solid #3498db;
-            background-color: #ecf0f1;
-            color: #2c3e50;
-            box-sizing: border-box;
-            outline: none;
-            margin-top: 5px;
-        }
-
-        button { 
-            background-color: #27ae60; 
-            color: white; 
-            border: none; 
-            padding: 14px 20px; 
-            font-size: 16px; 
-            font-weight: bold;
-            border-radius: 10px; 
-            cursor: pointer; 
-            width: 100%; 
-            margin-top: 25px;
-            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3);
-        }
+        input[type="time"] { width: 100%; padding: 12px; font-size: 18px; font-weight: bold; text-align: center; border-radius: 8px; border: 2px solid #3498db; background-color: #ecf0f1; color: #2c3e50; box-sizing: border-box; outline: none; margin-top: 5px; }
+        button { background-color: #27ae60; color: white; border: none; padding: 14px 20px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 25px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); }
         button:active { background-color: #219653; transform: scale(0.98); }
     </style>
 </head>
@@ -69,12 +40,14 @@
             
             let formattedFrom = convertTo12Hour(fromVal);
             let formattedEnd = convertTo12Hour(endVal);
-
             let finalResult = `${formattedFrom} - ${formattedEnd}`;
 
-            // ផ្ញើសទិន្នន័យត្រឡប់ទៅ Telegram Bot វិញ
-            tg.sendData(finalResult);
-            tg.close();
+            if (tg && tg.sendData) {
+                tg.sendData(finalResult);
+                tg.close();
+            } else {
+                alert("បានជ្រើសរើស៖ " + finalResult);
+            }
         }
 
         function convertTo12Hour(time24) {
@@ -88,4 +61,5 @@
             return `${formattedH}:${minutes} ${ampm}`;
         }
     </script>
+</body>
 </html>
