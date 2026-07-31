@@ -6,25 +6,49 @@
     <title>ជ្រើសរើសម៉ោងប្រកួត</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: 'Khmer OS Battambang', sans-serif; background-color: #f0f2f5; text-align: center; padding: 20px; }
-        h2 { color: #2c3e50; }
-        .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 20px; }
-        select { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; margin-top: 10px; }
-        button { background-color: #27ae60; color: white; border: none; padding: 14px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; }
-        button:hover { background-color: #219653; }
+        body { font-family: 'Khmer OS Battambang', sans-serif; background-color: #f8f9fa; text-align: center; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 320px; }
+        h3 { color: #2c3e50; margin-bottom: 10px; }
+        p { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
+        
+        /* 🌟 កាដ្រូអូសរើសម៉ោងបែបទំនើប (Scroll/Native Picker) */
+        input[type="time"] {
+            width: 100%;
+            padding: 14px;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 10px;
+            border: 2px solid #3498db;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        button { 
+            background-color: #27ae60; 
+            color: white; 
+            border: none; 
+            padding: 14px 20px; 
+            font-size: 16px; 
+            font-weight: bold;
+            border-radius: 10px; 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3);
+        }
+        button:active { background-color: #219653; transform: scale(0.98); }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>⏰ កំណត់ម៉ោងប្រកួតបាល់ទះ</h2>
-        <p>សូមជ្រើសរើសម៉ោងដែលត្រូវលេងល្ងាចនេះ៖</p>
-        <select id="matchTime">
-            <option value="06:30 PM - 08:30 PM">06:30 PM - 08:30 PM</option>
-            <option value="06:30 PM - 08:00 PM">06:30 PM - 08:00 PM</option>
-            <option value="06:00 PM - 08:00 PM">06:00 PM - 08:00 PM</option>
-            <option value="05:30 PM - 07:30 PM">05:30 PM - 07:30 PM</option>
-            <option value="🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក/រសៀល)">🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក/រសៀល)</option>
-        </select>
+        <h3>⏰ កំណត់ម៉ោងប្រកួត</h3>
+        <p>សូមចុចដើម្បីអូសរើសម៉ោង និងនាទី៖</p>
+        
+        <input type="time" id="matchTime" value="18:30">
+
         <button onclick="submitTime()">បញ្ជាក់ម៉ោង (Save)</button>
     </div>
 
@@ -33,9 +57,24 @@
         tg.expand();
 
         function submitTime() {
-            let selectedTime = document.getElementById("matchTime").value;
-            tg.sendData(selectedTime);
+            let timeValue = document.getElementById("matchTime").value; // ទម្រង់ 24h ឧទាហរណ៍ 18:30
+            
+            // បម្លែងម៉ោងពី 24h ទៅជាទម្រង់ 12h មាន AM/PM ស្អាតបាត
+            let formattedTime = convertTo12Hour(timeValue);
+
+            // ផ្ញើសទិន្នន័យត្រឡប់ទៅ Telegram Bot វិញ
+            tg.sendData(formattedTime);
             tg.close();
+        }
+
+        function convertTo12Hour(time24) {
+            let [hours, minutes] = time24.split(':');
+            let h = parseInt(hours);
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12;
+            h = h ? h : 12; // the hour '0' should be '12'
+            let formattedH = h < 10 ? '0' + h : h;
+            return `${formattedH}:${minutes} ${ampm}`;
         }
     </script>
 </body>
