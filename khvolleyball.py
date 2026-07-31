@@ -180,7 +180,8 @@ def get_main_inline_keyboard():
             InlineKeyboardButton("➖ Leave មិត្តភក្តិ", callback_data="btn_leave_friend")
         ],
         [
-            InlineKeyboardButton("⏰ កំណត់ថ្ងៃ និងម៉ោង (Web App)", web_app=WebAppInfo(url=web_app_url)),
+            # 🌟 លុបពាក្យ (Web App) ចេញ
+            InlineKeyboardButton("⏰ កំណត់ថ្ងៃ និងម៉ោង", web_app=WebAppInfo(url=web_app_url)),
             InlineKeyboardButton("🏟️ ជ្រើសរើសតារាង", callback_data="menu_court")
         ],
         [
@@ -469,7 +470,6 @@ def execute_shuffle():
           f"🔸 <b>ក្រុម B:</b> {', '.join(format_b)}\n\n" \
           f"📢 ការចាប់គូត្រូវបានសម្រេច! ត្រៀមខ្លួនសម្រាប់ប្រកួត!"
           
-    # 🌟 បង្កើតប៊ូតុងត្រឡប់ក្រោយសុទ្ធសាធពេល Shuffle (មិនទាន់លេងចប់ ដូច្នេះមិនបាច់មានពិន្ទុទេ)
     shuffle_back_kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")]
     ])
@@ -585,12 +585,11 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន ពិន្ទុ និងការបោះឆ្នោត MVP រួចរាល់!")
 
 async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg, kb = execute_shuffle()
-    if isinstance(msg, type(None)):
-        # กรณี err
-        await update.message.reply_text(kb) # នៅទីនេះ kb គឺជាអត្ថបទ Error
+    msg, kb_or_err = execute_shuffle()
+    if isinstance(kb_or_err, str):
+        await update.message.reply_text(kb_or_err)
     else:
-        await update.message.reply_text(msg, parse_mode="HTML", reply_markup=kb)
+        await update.message.reply_text(msg, parse_mode="HTML", reply_markup=kb_or_err)
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = build_stats_text()
@@ -659,7 +658,7 @@ async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TY
         reply_msg = build_attendance_message(status_txt)
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-# 🌟 ទទួលទិន្នន័យ ថ្ងៃ និងម៉ោង ពី Web App
+# 🌟 ទទួលទិន្នន័យ ថ្ងៃ និងម៉ោង ពី Web App និង Update ភ្លាមៗ (Edit Message)
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global custom_date_text, custom_time_text
     if update.effective_message and update.effective_message.web_app_data:
@@ -675,7 +674,10 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             custom_time_text = raw_data
             
         save_state()
-        await update.message.reply_text(f"🗓️⏰ បានកំណត់ពេលប្រកួតថ្មី:\n📅 ថ្ងៃ៖ <b>{custom_date_text}</b>\n⏰ ម៉ោង៖ <code>{custom_time_text}</code>", parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        
+        # 🌟 Update ភ្លាមៗ (Edit Message) មិនរុញសារឡើងលើ
+        reply_msg = build_attendance_message(f"✅ បានកំណត់ពេលប្រកួតថ្មី:\n📅 ថ្ងៃ៖ {custom_date_text} | ⏰ ម៉ោង៖ {custom_time_text}")
+        await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 # ==========================================
 # 8. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
@@ -780,21 +782,22 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៨. ចុច ប៊ូតុង 🔀 ចាប់គូ (Shuffle) - 🌟 មិនបង្ហាញ Score Buttons នៅទីនេះទេ
+    # ៨. ចុច ប៊ូតុង 🔀 ចាប់គូ (Shuffle)
     elif data == "btn_shuffle":
         msg, kb_or_err = execute_shuffle()
         if isinstance(kb_or_err, str):
             await query.answer(kb_or_err, show_alert=True)
         else:
             await query.answer("🔀 បានចាប់គូស្វ័យប្រវត្តជោគជ័យ!", show_alert=True)
-            await query.message.reply_text(msg, parse_mode="HTML", reply_markup=kb_or_err)
+            # 🌟 ប្រើ query.edit_message_text ដើម្បីកុំឱ្យរុញសារឡើងលើ
+            await query.edit_message_text(msg, parse_mode="HTML", reply_markup=kb_or_err)
 
     # ៩. ចុច ប៊ូតុង 📊 ស្ថិតិប្រកួត (Stats)
     elif data == "btn_stats":
         await query.answer("📊 តារាងស្ថិតិប្រកួតប្រចាំថ្ងៃ", show_alert=False)
         msg = build_stats_text()
         back_kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")]])
-        await query.message.reply_text(msg, parse_mode="HTML", reply_markup=back_kb)
+        await query.edit_message_text(msg, parse_mode="HTML", reply_markup=back_kb)
 
     # ៩.១. ប៊ូតុងបោះឆ្នោត MVP
     elif data == "btn_vote_mvp":
@@ -849,7 +852,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         await query.answer("👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះប្រកួតថ្ងៃនេះ!", show_alert=True)
         header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ!"
         reply_msg = build_attendance_message(header_txt)
-        await query.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
     # ១២. ចុច របៀបប្រើប្រាស់លម្អិត
     elif data == "btn_help_guide":
@@ -861,7 +864,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                     "• ចុច <code>❌ Leave ខ្លួនឯង</code> ដើម្បីដកឈ្មោះចេញវិញ\n" \
                     "• ចុច <code>➖ Leave មិត្តភក្តិ</code> ដើម្បីជ្រើសរើសដកឈ្មោះមិត្តភក្តិ\n\n" \
                     "🔹 <b>២. ការកំណត់ និងការចាប់គូប្រកួត៖</b>\n" \
-                    "• ចុច <code>⏰ កំណត់ថ្ងៃ និងម៉ោង (Web App)</code> ដើម្បីជ្រើសរើសថ្ងៃ និងម៉ោង From-End\n" \
+                    "• ចុច <code>⏰ កំណត់ថ្ងៃ និងម៉ោង</code> ដើម្បីជ្រើសរើសថ្ងៃ និងម៉ោង From-End\n" \
                     "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាងប្រកួត\n" \
                     "• ចុច <code>🔀 ចាប់គូ (Shuffle)</code> ដើម្បីចាប់គូស្វ័យប្រវត្ត (គាំទ្ររហូតដល់ ៦ សិត)\n" \
                     "• ចុច <code>📊 ស្ថិតិប្រកួត (Stats)</code> ដើម្បីមើលស្ថិតិឈ្នះ/ចាញ់\n" \
@@ -896,7 +899,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 # ៩. MAIN FUNCTION
 # ==========================================
 def main() -> None:
-    token = "8066577030:AAEq3L0j0AhqWX6WFrodP5Yk4PLnNxR3WP8"
+    token = "7908903721:AAEJ_GNTKHthe6KJtjyGBVIXQWkTA_GTDJE"
     
     load_state()
     
@@ -922,7 +925,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot with Clean Shuffle (No Score Buttons) is running smoothly...")
+    print("Bot with Clean Shuffle, No (Web App) text, and instant Date/Time Update is running smoothly...")
     app.run_polling()
 
 if __name__ == "__main__":
