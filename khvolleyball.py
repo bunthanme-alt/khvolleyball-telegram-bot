@@ -170,7 +170,7 @@ def load_state():
 # ==========================================
 def get_main_inline_keyboard():
     # 🌟 ដាក់ Link GitHub Pages របស់បងនៅទីនេះ
-    web_app_url = "https://aoklyhour.github.io/khvolleyball-bot/"
+    web_app_url = "https://aoklyhour.github.io/khvolleyball-bot/?v=2"
     
     keyboard = [
         [
