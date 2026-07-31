@@ -7,7 +7,7 @@ import datetime
 import time
 import requests
 import re
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
 # ==========================================
@@ -80,17 +80,8 @@ courts_database = {
     "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc"}
 }
 
-# 🌟 អាប់ដេតទម្រង់ម៉ោងរហ័សបែប 06:30 PM - 08:30 PM
-times_database = {
-    "1": "06:30 PM - 08:30 PM",
-    "2": "06:30 PM - 08:00 PM",
-    "3": "06:00 PM - 08:00 PM",
-    "4": "05:30 PM - 07:30 PM",
-    "5": "🗓️ ថ្ងៃសៅរ៍-អាទិត្យ (ព្រឹក/រសៀល)"
-}
-
 selected_court_key = None
-custom_time_text = None  
+custom_time_text = "06:30 PM - 08:30 PM" 
 pending_friend_join = {}  
 ICT = datetime.timezone(datetime.timedelta(hours=7))
 
@@ -152,7 +143,7 @@ def load_state():
                     player_stats = data.get("player_stats", {})
                     match_score = data.get("match_score", {"a": 0, "b": 0})
                     selected_court_key = data.get("selected_court_key")
-                    custom_time_text = data.get("custom_time_text")
+                    custom_time_text = data.get("custom_time_text", "06:30 PM - 08:30 PM")
                     paid_players = set(data.get("paid_players", []))
                     mvp_votes = data.get("mvp_votes", {})
                     print("🔄 [DATA] State restored from Upstash Redis Cloud!")
@@ -170,7 +161,7 @@ def load_state():
                 player_stats = data.get("player_stats", {})
                 match_score = data.get("match_score", {"a": 0, "b": 0})
                 selected_court_key = data.get("selected_court_key")
-                custom_time_text = data.get("custom_time_text")
+                custom_time_text = data.get("custom_time_text", "06:30 PM - 08:30 PM")
                 paid_players = set(data.get("paid_players", []))
                 mvp_votes = data.get("mvp_votes", {})
                 print("🔄 [DATA] State restored from Local Backup State File!")
@@ -181,6 +172,9 @@ def load_state():
 # ៤. HELPER FUNCTIONS & INLINE KEYBOARDS
 # ==========================================
 def get_main_inline_keyboard():
+    # 🌟 ដាក់ Link Web App របស់បងនៅត្រង់ url ខាងក្រោម (ឧទាហរណ៍៖ GitHub Pages URL)
+    web_app_url = "https://your-github-username.github.io/volleyball-webapp/"
+    
     keyboard = [
         [
             InlineKeyboardButton("✅ Join ខ្លួនឯង", callback_data="btn_join_self"),
@@ -191,7 +185,7 @@ def get_main_inline_keyboard():
             InlineKeyboardButton("➖ Leave មិត្តភក្តិ", callback_data="btn_leave_friend")
         ],
         [
-            InlineKeyboardButton("⏰ ជ្រើសរើសម៉ោង", callback_data="menu_time"),
+            InlineKeyboardButton("⏰ កំណត់ម៉ោង (Web App)", web_app=WebAppInfo(url=web_app_url)),
             InlineKeyboardButton("🏟️ ជ្រើសរើសតារាង", callback_data="menu_court")
         ],
         [
@@ -262,7 +256,7 @@ def build_attendance_message(header_txt=""):
     if custom_time_text:
         reply_msg += f"⏰ <b>ម៉ោងប្រកួត៖</b> <code> {custom_time_text} </code>\n🟢 [កំណត់រួចរាល់]\n"
     else:
-        reply_msg += "⏰ <b>ម៉ោងប្រកួត៖</b> 🟡 [មិនទាន់ជ្រើសរើសម៉ោង]\n"
+        reply_msg += "⏰ <b>ម៉ោងប្រកួត៖</b> <code>06:30 PM - 08:30 PM</code>\n"
                 
     if selected_court_key is not None and selected_court_key in courts_database:
         court_info = courts_database[selected_court_key]
@@ -650,7 +644,7 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_teams = {"team_a": [], "team_b": []}
     match_score = {"a": 0, "b": 0}
     selected_court_key = None
-    custom_time_text = None
+    custom_time_text = "06:30 PM - 08:30 PM"
     player_stats = {}
     mvp_votes = {}
     paid_players = set()
@@ -664,7 +658,7 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     previous_player_stats = None
     player_stats = {}
     selected_court_key = None
-    custom_time_text = None
+    custom_time_text = "06:30 PM - 08:30 PM"
     
     for p in today_players:
         player_stats[p] = {"win": 0, "loss": 0}
@@ -904,19 +898,10 @@ async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global custom_time_text
     args = context.args
     if not args:
-        msg = "❌ របៀបប្រើ៖ វាយ `/settime [លេខកូដ]` ឬ `/settime [អត្ថបទម៉ោងតាមចិត្ត]`\n\n" \
-              "<b>ម៉ោងរហ័ស៖</b>\n"
-        for key, time_val in times_database.items():
-            msg += f"👉 /settime {key} ➡️ {time_val}\n"
-        msg += "\n<b>ឧទាហរណ៍វាយដោយដៃ៖</b> `/settime 07:00 PM - 09:00 PM`"
-        await update.message.reply_text(msg, parse_mode="HTML")
+        await update.message.reply_text("❌ របៀបប្រើ៖ វាយ `/settime [ម៉ោងរបស់អ្នក]`\n👉 ឧទាហរណ៍៖ `/settime 06:30 PM - 08:30 PM`", parse_mode="HTML")
         return
         
-    if args[0] in times_database:
-        custom_time_text = times_database[args[0]]
-    else:
-        custom_time_text = " ".join(args)
-        
+    custom_time_text = " ".join(args)
     save_state()
     await update.message.reply_text(f"⏰ បានកំណត់ម៉ោងប្រកួត៖ <code>{custom_time_text}</code> ដោយជោគជ័យ!", parse_mode="HTML")
 
@@ -1062,35 +1047,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_msg = build_attendance_message()
             await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    elif data == "menu_time":
-        await query.answer("⏰ សូមជ្រើសរើសម៉ោងប្រកួត!", show_alert=False)
-        time_keyboard = []
-        row = []
-        for key, val in times_database.items():
-            row.append(InlineKeyboardButton(f"⏰ {val}", callback_data=f"settime_{key}"))
-            if len(row) == 2:
-                time_keyboard.append(row)
-                row = []
-        if row:
-            time_keyboard.append(row)
-            
-        time_keyboard.append([InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")])
-        
-        await query.edit_message_text(
-            "⏰ <b>សូមជ្រើសរើសម៉ោងប្រកួតខាងក្រោម៖</b>\n*(ចំណាំ៖ អាចវាយ /settime [06:00 PM - 08:00 PM] ក្នុងគ្រុបបានដែរ)*", 
-            parse_mode="HTML", 
-            reply_markup=InlineKeyboardMarkup(time_keyboard)
-        )
-
-    elif data.startswith("settime_"):
-        time_key = data.split("_")[1]
-        custom_time_text = times_database[time_key]
-        save_state()
-        await query.answer(f"⏰ បានជ្រើសរើសម៉ោង៖ {custom_time_text}!", show_alert=True)
-        status_txt = f"⏰ បានជ្រើសរើសម៉ោងប្រកួត៖ {custom_time_text} ដោយជោគជ័យ!"
-        reply_msg = build_attendance_message(status_txt)
-        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
-
     elif data == "menu_court":
         await query.answer("🏟️ សូមជ្រើសរើសតារាងប្រកួត!", show_alert=False)
         court_keyboard = []
@@ -1214,7 +1170,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                     "• ចុច <code>❌ Leave ខ្លួនឯង</code> ដើម្បីដកឈ្មោះចេញវិញ\n" \
                     "• ចុច <code>➖ Leave មិត្តភក្តិ</code> ដើម្បីជ្រើសរើសដកឈ្មោះមិត្តភក្តិ\n\n" \
                     "🔹 <b>២. ការកំណត់ និងការចាប់គូប្រកួត៖</b>\n" \
-                    "• ចុច <code>⏰ ជ្រើសរើសម៉ោង</code> ឬវាយ <code>/settime [06:30 PM - 08:30 PM]</code>\n" \
+                    "• វាយ <code>/settime [06:30 PM - 08:30 PM]</code> ដើម្បីកំណត់ម៉ោង\n" \
                     "• ចុច <code>🏟️ ជ្រើសរើសតារាង</code> ដើម្បីជ្រើសរើសតារាងប្រកួត\n" \
                     "• ចុច <code>🔀 ចាប់គូ (Shuffle)</code> ដើម្បីចាប់គូស្វ័យប្រវត្ត\n" \
                     "• ចុច <code>📊 ស្ថិតិប្រកួត (Stats)</code> ដើម្បីមើលស្ថិតិឈ្នះ/ចាញ់\n" \
@@ -1284,7 +1240,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot started polling with 06:30 PM - 08:30 PM format enabled...")
+    print("Bot started polling with Web App button ready...")
     app.run_polling()
 
 if __name__ == "__main__":
