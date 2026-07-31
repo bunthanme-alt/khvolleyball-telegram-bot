@@ -169,8 +169,8 @@ def load_state():
 # ៤. HELPER FUNCTIONS & INLINE KEYBOARDS
 # ==========================================
 def get_main_inline_keyboard():
-    # 🌟 ត្រូវដាក់ Link GitHub Pages របស់បងនៅទីនេះ
-    web_app_url = "https://bunthanme-alt.github.io/khvolleyball-telegram-bot/"
+    # 🌟 ដាក់ Link GitHub Pages របស់បងនៅទីនេះ
+    web_app_url = "https://aoklyhour.github.io/khvolleyball-bot/"
     
     keyboard = [
         [
@@ -466,7 +466,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
            f"🔗 Map៖ <a href='{court['link']}'>ចុចទីនេះដើម្បីមើលទីតាំង</a>"
     await update.message.reply_text(info, parse_mode="HTML")
 
-# 🌟 ទទួលទិន្នន័យ From - End ម៉ោងដែលផ្ញើមកពី Web App (Scroll Picker)
+# 🌟 ទទួលទិន្នន័យពី Web App តាមរយៈ filters.StatusUpdate.WEB_APP_DATA
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global custom_time_text
     if update.effective_message and update.effective_message.web_app_data:
@@ -536,11 +536,11 @@ def main():
     app.add_handler(CommandHandler("setmap", setmap_command))
     app.add_handler(CommandHandler("info", info_command))
     
-    # 🌟 Handler ទទួលទិន្នន័យ From - End ពី Web App
-    app.add_handler(MessageHandler(filters.WEB_APP_DATA, web_app_data_handler))
+    # 🌟 ប្រើប្រាស់ filters.StatusUpdate.WEB_APP_DATA សម្រាប់កំចាត់ Error AttributeError
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, web_app_data_handler))
     app.add_handler(CallbackQueryHandler(button_handler))
     
-    print("Bot with Web App From-End Time Picker is running...")
+    print("Bot with Web App Time Picker is running smoothly...")
     app.run_polling()
 
 if __name__ == "__main__":
