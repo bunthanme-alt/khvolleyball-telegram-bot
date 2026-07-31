@@ -48,6 +48,11 @@
             let fromVal = document.getElementById("timeFrom").value;
             let endVal = document.getElementById("timeEnd").value;
             
+            if(!dateVal || !fromVal || !endVal) {
+                alert("⚠️ សូមជ្រើសរើសថ្ងៃ និងម៉ោងឱ្យបានត្រឹមត្រូវ!");
+                return;
+            }
+
             let formattedDate = formatDate(dateVal);
             let formattedFrom = convertTo12Hour(fromVal);
             let formattedEnd = convertTo12Hour(endVal);
@@ -55,6 +60,8 @@
             let finalResult = `DATE:${formattedDate} | TIME:${formattedFrom} - ${formattedEnd}`;
 
             if (tg && tg.sendData) {
+                // 🌟 បង្ហាញ Alert មុនពេលបញ្ជូនទិន្នន័យ
+                alert("✅ បានកំណត់ថ្ងៃ និងម៉ោងជោគជ័យ!");
                 tg.sendData(finalResult);
                 tg.close();
             } else {
