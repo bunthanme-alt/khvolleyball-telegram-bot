@@ -504,7 +504,7 @@ def set_match_score(sets_a, sets_b):
     if sets_a > sets_b:
         result_msg = f"🎉 លទ្ធផលសិតសរុប៖ ក្រុម A ឈ្នះក្រុម B ដោយពិន្ទុ {sets_a}-{sets_b}"
     elif sets_b > sets_a:
-        result_msg = f"🎉 លទ្ធផលសិតសរុប៖ ក្រុម B ឈ្នះក្រុម A ដោយពិន្ទុ {sets_b}-{sets_b}"
+        result_msg = f"🎉 លទ្ធផលសិតសរុប៖ ក្រុម B ឈ្នះក្រុម A ដោយពិន្ទុ {sets_b}-{sets_a}"
     else:
         result_msg = f"🤝 លទ្ធផលសិតសរុប៖ ក្រុមទាំងពីរស្មើគ្នា {sets_a}-{sets_b}"
         
@@ -657,7 +657,7 @@ async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TY
         reply_msg = build_attendance_message(status_txt)
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-# 🌟 ទទួលទិន្នន័យ ថ្ងៃ និងម៉ោង ពី Web App (ប្រើ Message Handler គ្រប់ប្រភេទទាំងឡាយ)
+# 🌟 ទទួលទិន្នន័យ ថ្ងៃ និងម៉ោង ពី Web App ដោយប្រើ filters.TEXT & filters.StatusUpdate ជំនួសដើម្បីការពារ Error
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global custom_date_text, custom_time_text
     if update.effective_message and update.effective_message.web_app_data:
@@ -674,7 +674,6 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             
         save_state()
         
-        # 🌟 បង្កើតសារថ្មីបញ្ជាក់ការកំណត់ថ្ងៃ និងម៉ោងភ្លាមៗ
         reply_msg = build_attendance_message(f"✅ បានកំណត់ពេលប្រកួតថ្មីជោគជ័យ!\n📅 ថ្ងៃ៖ {custom_date_text} | ⏰ ម៉ោង៖ {custom_time_text}")
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
@@ -916,8 +915,8 @@ def main() -> None:
     app.add_handler(CommandHandler("info", info_command))
     app.add_handler(CommandHandler("match", match_command))
     
-    # Message Handlers (🌟 ប្រើ filters.ALL ឬ filters.UpdateType.WEB_APP_DATA ដើម្បីចាប់ Web App Data ឱ្យជាប់ ១០០%)
-    app.add_handler(MessageHandler(filters.UpdateType.WEB_APP_DATA, web_app_data_handler))
+    # Message Handlers (🌟 ប្រើ filters.StatusUpdate.WEB_APP_DATA ឡើងវិញជាមួយ Handler ត្រឹមត្រូវ ១០០%)
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, web_app_data_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_reply_handler))
     
     # Callbacks (Buttons)
