@@ -693,15 +693,44 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         save_state()
 
         # 🌟 លុប Reply Keyboard ដោយផ្ញើសារខ្នាតតូចមួយ ("‌" = zero-width character) រួចលុបសារនោះចោលភ្លាមៗ
-        # វិធីនេះធ្វើឲ្យអ្នកប្រើឃើញតែសារព័ត៌មានចុងក្រោយតែមួយប៉ុណ្ណោះ គ្មានសារ "បានទទួលទិន្នន័យ" លេចឡើងជាប់ភ្នែកទេ
         temp_msg = await update.message.reply_text("\u200b", reply_markup=ReplyKeyboardRemove())
         try:
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_msg.message_id)
         except Exception:
             pass  # បើលុបមិនបានក៏មិនអីទេ ព្រោះសារនេះមើលទៅទទេ មិនរំខានអ្វីច្រើន
 
+        # 🌟 លុបសារ "👇 សូមចុចប៊ូតុងខាងក្រោម..." ចោល ព្រោះលែងចាំបាច់ទៀតហើយ
+        prompt_message_id = context.user_data.pop("prompt_message_id", None)
+        if prompt_message_id:
+            try:
+                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=prompt_message_id)
+            except Exception:
+                pass
+
         reply_msg = build_attendance_message(f"✅ បានកំណត់ពេលប្រកួតថ្មីជោគជ័យ!\n📅 ថ្ងៃ៖ {custom_date_text} | ⏰ ម៉ោង៖ {custom_time_text}")
-        await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+
+        # 🌟 ចំណុចសំខាន់៖ ព្យាយាម "edit" សារបញ្ជីដើម (ដែលមាន Join/Leave buttons) ដោយផ្ទាល់
+        # ជំនួសឲ្យផ្ញើសារថ្មីមួយទៀត ដូច្នេះបញ្ជីនឹង Update ភ្លាមៗនៅកន្លែងដដែល
+        origin_chat_id = context.user_data.pop("origin_list_chat_id", None)
+        origin_message_id = context.user_data.pop("origin_list_message_id", None)
+
+        edited_successfully = False
+        if origin_chat_id and origin_message_id:
+            try:
+                await context.bot.edit_message_text(
+                    chat_id=origin_chat_id,
+                    message_id=origin_message_id,
+                    text=reply_msg,
+                    parse_mode="HTML",
+                    reply_markup=get_main_inline_keyboard()
+                )
+                edited_successfully = True
+            except Exception as e:
+                # បើសារដើមត្រូវបានលុប ឬចាស់ពេក (Telegram មិនអនុញ្ញាតឲ្យ edit) នោះនឹងផ្ញើសារថ្មីជំនួសវិញ
+                print(f"⚠️ [EDIT ORIGIN LIST ERROR] {e}")
+
+        if not edited_successfully:
+            await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
 # ==========================================
 # 8. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
@@ -809,10 +838,16 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     # 7.1 🌟 ចុច ⏰ កំណត់ថ្ងៃ និងម៉ោង -> បើក Reply Keyboard ដែលមាន Web App
     elif data == "btn_open_time_webapp":
         await query.answer()
-        await query.message.reply_text(
+        # 🌟 រក្សាទុក chat_id + message_id នៃសារបញ្ជីដើម ដើម្បីអាច "edit" សារនោះផ្ទាល់វិញ
+        # នៅពេលទទួលទិន្នន័យពី Web App (ជំនួសឲ្យផ្ញើសារថ្មីមួយទៀត)
+        context.user_data["origin_list_chat_id"] = query.message.chat_id
+        context.user_data["origin_list_message_id"] = query.message.message_id
+        prompt_msg = await query.message.reply_text(
             "👇 សូមចុចប៊ូតុងខាងក្រោមដើម្បីបើក Web App កំណត់ថ្ងៃ និងម៉ោង៖",
             reply_markup=get_time_webapp_reply_keyboard()
         )
+        # 🌟 រក្សាទុក message_id នៃសារ prompt នេះផងដែរ ដើម្បីលុបចោលពេលទទួលទិន្នន័យរួច
+        context.user_data["prompt_message_id"] = prompt_msg.message_id
 
     # 8. ចុច ប៊ូតុង 🔀 ចាប់គូ (Shuffle)
     elif data == "btn_shuffle":
