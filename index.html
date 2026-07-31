@@ -3,51 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ជ្រើសរើសម៉ោងប្រកួត</title>
+    <title>កំណត់កាលបរិច្ឆេទ និងម៉ោងប្រកួត</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: 'Khmer OS Battambang', sans-serif; background-color: #f8f9fa; text-align: center; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .box { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 320px; text-align: left; }
         h3 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
         p { color: #7f8c8d; font-size: 13px; text-align: center; margin-bottom: 20px; }
-        label { font-size: 14px; font-weight: bold; color: #34495e; display: block; margin-top: 10px; }
-        input[type="time"] { width: 100%; padding: 12px; font-size: 18px; font-weight: bold; text-align: center; border-radius: 8px; border: 2px solid #3498db; background-color: #ecf0f1; color: #2c3e50; box-sizing: border-box; outline: none; margin-top: 5px; }
-        button { background-color: #27ae60; color: white; border: none; padding: 14px 20px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 25px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); }
+        label { font-size: 13px; font-weight: bold; color: #34495e; display: block; margin-top: 10px; }
+        input[type="date"], input[type="time"] {
+            width: 100%; padding: 10px; font-size: 16px; font-weight: bold; text-align: center; border-radius: 8px; border: 2px solid #3498db; background-color: #ecf0f1; color: #2c3e50; box-sizing: border-box; outline: none; margin-top: 4px;
+        }
+        button { 
+            background-color: #27ae60; color: white; border: none; padding: 14px 20px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 25px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3);
+        }
         button:active { background-color: #219653; transform: scale(0.98); }
     </style>
 </head>
 <body>
     <div class="box">
-        <h3>⏰ កំណត់ម៉ោងប្រកួត</h3>
-        <p>សូមជ្រើសរើសម៉ោងចាប់ផ្តើម និងម៉ោងបញ្ចប់៖</p>
+        <h3>🗓️ កំណត់ពេលប្រកួត</h3>
+        <p>ជ្រើសរើសថ្ងៃ និងម៉ោងប្រកួត៖</p>
         
+        <label>📅 កាលបរិច្ឆេទ (Date):</label>
+        <input type="date" id="matchDate">
+
         <label>🟢 ម៉ោងចាប់ផ្តើម (From):</label>
         <input type="time" id="timeFrom" value="18:30">
 
         <label>🔴 ម៉ោងបញ្ចប់ (End):</label>
         <input type="time" id="timeEnd" value="20:30">
 
-        <button onclick="submitTime()">បញ្ជាក់ម៉ោង (Save)</button>
+        <button onclick="submitData()">បញ្ជាក់ការកំណត់ (Save)</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        function submitTime() {
+        // កំណត់ថ្ងៃខែស្វ័យប្រវត្តជាថ្ងៃនេះពេលបើកដំបូង
+        document.getElementById('matchDate').valueAsDate = new Date();
+
+        function submitData() {
+            let dateVal = document.getElementById("matchDate").value; // ទម្រង់ YYYY-MM-DD
             let fromVal = document.getElementById("timeFrom").value;
             let endVal = document.getElementById("timeEnd").value;
             
+            // បម្លែង Date ជា DD/MM/YYYY ស្អាតបាត
+            let formattedDate = formatDate(dateVal);
             let formattedFrom = convertTo12Hour(fromVal);
             let formattedEnd = convertTo12Hour(endVal);
-            let finalResult = `${formattedFrom} - ${formattedEnd}`;
+
+            // បញ្ជូនទម្រង់ជា JSON ឬ String ទៅ Bot
+            let finalResult = `DATE:${formattedDate} | TIME:${formattedFrom} - ${formattedEnd}`;
 
             if (tg && tg.sendData) {
                 tg.sendData(finalResult);
                 tg.close();
             } else {
-                alert("បានជ្រើសរើស៖ " + finalResult);
+                alert("បានកំណត់៖ " + finalResult);
             }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return "";
+            let parts = dateString.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
         function convertTo12Hour(time24) {
