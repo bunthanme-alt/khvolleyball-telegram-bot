@@ -95,6 +95,12 @@ custom_time_text = "06:30 PM - 08:30 PM"
 
 pending_friend_join = {}
 
+# 🌟 រក្សាទុក message reference (origin list + prompt) ក្នុង persistent storage
+# key = user_id (string), value = {"origin_chat_id", "origin_message_id", "prompt_chat_id", "prompt_message_id"}
+# ត្រូវប្រើ persistent storage (មិនមែន context.user_data) ព្រោះ Render Free Tier អាច restart process
+# ចន្លោះពេលអ្នកប្រើកំពុងបំពេញ Web App ដែលនឹងធ្វើឲ្យ context.user_data (RAM) បាត់ចោល
+pending_time_update = {}
+
 def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
 
@@ -114,7 +120,8 @@ def save_state():
         "selected_court_key": selected_court_key,
         "custom_date_text": custom_date_text,
         "custom_time_text": custom_time_text,
-        "mvp_votes": mvp_votes
+        "mvp_votes": mvp_votes,
+        "pending_time_update": pending_time_update
     }
 
     if UPSTASH_URL and UPSTASH_TOKEN:
@@ -134,7 +141,7 @@ def save_state():
         print(f"⚠️ [STATE ERROR] {e}")
 
 def load_state():
-    global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, custom_date_text, custom_time_text, mvp_votes
+    global today_players, waiting_list, current_teams, player_stats, match_score, selected_court_key, custom_date_text, custom_time_text, mvp_votes, pending_time_update
 
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
@@ -154,6 +161,7 @@ def load_state():
                     custom_date_text = data.get("custom_date_text", datetime.datetime.now(ICT).strftime("%d/%m/%Y"))
                     custom_time_text = data.get("custom_time_text", "06:30 PM - 08:30 PM")
                     mvp_votes = data.get("mvp_votes", {})
+                    pending_time_update = data.get("pending_time_update", {})
                     return
         except Exception as e:
             print(f"⚠️ [REDIS ERROR] {e}")
@@ -171,6 +179,7 @@ def load_state():
                 custom_date_text = data.get("custom_date_text", datetime.datetime.now(ICT).strftime("%d/%m/%Y"))
                 custom_time_text = data.get("custom_time_text", "06:30 PM - 08:30 PM")
                 mvp_votes = data.get("mvp_votes", {})
+                pending_time_update = data.get("pending_time_update", {})
         except Exception as e:
             print(f"⚠️ [STATE ERROR] {e}")
 
@@ -690,29 +699,41 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         except Exception:
             custom_time_text = raw_data
 
-        save_state()
+        # 🌟 ទាញយក reference នៃសារបញ្ជីដើម + សារ prompt ពី persistent storage
+        # (រក្សាទុកតាំងពីពេលចុច "⏰ កំណត់ថ្ងៃ" នៅ pending_time_update dict)
+        user_id = update.effective_user.id
+        pending_info = pending_time_update.pop(str(user_id), None)
 
-        # 🌟 លុប Reply Keyboard ដោយផ្ញើសារខ្នាតតូចមួយ ("‌" = zero-width character) រួចលុបសារនោះចោលភ្លាមៗ
-        temp_msg = await update.message.reply_text("\u200b", reply_markup=ReplyKeyboardRemove())
+        save_state()  # save ទាំង custom_date_text/custom_time_text និង pending_time_update ដែលទើប pop ចេញ
+
+        # 🌟 លុប Reply Keyboard ដោយផ្ញើសារខ្នាតតូចមួយ ("​" = zero-width character) រួចលុបសារនោះចោលភ្លាមៗ
+        # ⚠️ FIX: ដាក់ក្នុង try/except ដើម្បីកុំឲ្យ error ណាមួយ (ឧ. network glitch) block
+        # មិនឲ្យកូដដំណើរការបន្តទៅដល់ចំណុច edit_message_text/fallback ខាងក្រោម
         try:
-            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_msg.message_id)
-        except Exception:
-            pass  # បើលុបមិនបានក៏មិនអីទេ ព្រោះសារនេះមើលទៅទទេ មិនរំខានអ្វីច្រើន
+            temp_msg = await update.message.reply_text("\u200b", reply_markup=ReplyKeyboardRemove())
+            try:
+                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_msg.message_id)
+            except Exception as e:
+                print(f"⚠️ [DELETE TEMP MSG ERROR] {e}")
+        except Exception as e:
+            print(f"⚠️ [SEND TEMP MSG ERROR] {e}")
 
         # 🌟 លុបសារ "👇 សូមចុចប៊ូតុងខាងក្រោម..." ចោល ព្រោះលែងចាំបាច់ទៀតហើយ
-        prompt_message_id = context.user_data.pop("prompt_message_id", None)
-        if prompt_message_id:
+        if pending_info and pending_info.get("prompt_message_id"):
             try:
-                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=prompt_message_id)
-            except Exception:
-                pass
+                await context.bot.delete_message(
+                    chat_id=pending_info.get("prompt_chat_id", update.effective_chat.id),
+                    message_id=pending_info["prompt_message_id"]
+                )
+            except Exception as e:
+                print(f"⚠️ [DELETE PROMPT MSG ERROR] {e}")
 
         reply_msg = build_attendance_message(f"✅ បានកំណត់ពេលប្រកួតថ្មីជោគជ័យ!\n📅 ថ្ងៃ៖ {custom_date_text} | ⏰ ម៉ោង៖ {custom_time_text}")
 
         # 🌟 ចំណុចសំខាន់៖ ព្យាយាម "edit" សារបញ្ជីដើម (ដែលមាន Join/Leave buttons) ដោយផ្ទាល់
         # ជំនួសឲ្យផ្ញើសារថ្មីមួយទៀត ដូច្នេះបញ្ជីនឹង Update ភ្លាមៗនៅកន្លែងដដែល
-        origin_chat_id = context.user_data.pop("origin_list_chat_id", None)
-        origin_message_id = context.user_data.pop("origin_list_message_id", None)
+        origin_chat_id = pending_info.get("origin_chat_id") if pending_info else None
+        origin_message_id = pending_info.get("origin_message_id") if pending_info else None
 
         edited_successfully = False
         if origin_chat_id and origin_message_id:
@@ -728,9 +749,15 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             except Exception as e:
                 # បើសារដើមត្រូវបានលុប ឬចាស់ពេក (Telegram មិនអនុញ្ញាតឲ្យ edit) នោះនឹងផ្ញើសារថ្មីជំនួសវិញ
                 print(f"⚠️ [EDIT ORIGIN LIST ERROR] {e}")
+        else:
+            # ⚠️ FIX: log ករណីដែល pending_info គ្មាន ដើម្បីជួយ debug (ឧ. state ចោលបាត់ ឬ user_id មិនត្រូវគ្នា)
+            print(f"⚠️ [NO PENDING INFO] user_id={user_id}, pending_info={pending_info}")
 
         if not edited_successfully:
-            await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+            try:
+                await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+            except Exception as e:
+                print(f"⚠️ [FALLBACK SEND ERROR] {e}")
 
 # ==========================================
 # 8. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
@@ -838,16 +865,20 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     # 7.1 🌟 ចុច ⏰ កំណត់ថ្ងៃ និងម៉ោង -> បើក Reply Keyboard ដែលមាន Web App
     elif data == "btn_open_time_webapp":
         await query.answer()
-        # 🌟 រក្សាទុក chat_id + message_id នៃសារបញ្ជីដើម ដើម្បីអាច "edit" សារនោះផ្ទាល់វិញ
-        # នៅពេលទទួលទិន្នន័យពី Web App (ជំនួសឲ្យផ្ញើសារថ្មីមួយទៀត)
-        context.user_data["origin_list_chat_id"] = query.message.chat_id
-        context.user_data["origin_list_message_id"] = query.message.message_id
         prompt_msg = await query.message.reply_text(
             "👇 សូមចុចប៊ូតុងខាងក្រោមដើម្បីបើក Web App កំណត់ថ្ងៃ និងម៉ោង៖",
             reply_markup=get_time_webapp_reply_keyboard()
         )
-        # 🌟 រក្សាទុក message_id នៃសារ prompt នេះផងដែរ ដើម្បីលុបចោលពេលទទួលទិន្នន័យរួច
-        context.user_data["prompt_message_id"] = prompt_msg.message_id
+        # 🌟 រក្សាទុក chat_id + message_id នៃសារបញ្ជីដើម ព្រមទាំងសារ prompt ទៅក្នុង
+        # persistent storage (មិនមែន context.user_data ដែលនៅតែក្នុង RAM ប៉ុណ្ណោះ)
+        # ដើម្បីធានាថាទិន្នន័យនេះមិនបាត់ បើ server restart/sleep ចន្លោះពេលអ្នកកំពុងបំពេញ Web App
+        pending_time_update[str(user_id)] = {
+            "origin_chat_id": query.message.chat_id,
+            "origin_message_id": query.message.message_id,
+            "prompt_chat_id": prompt_msg.chat_id,
+            "prompt_message_id": prompt_msg.message_id
+        }
+        save_state()
 
     # 8. ចុច ប៊ូតុង 🔀 ចាប់គូ (Shuffle)
     elif data == "btn_shuffle":
