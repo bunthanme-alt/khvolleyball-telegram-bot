@@ -692,8 +692,13 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
         save_state()
 
-        # លុប Reply Keyboard បណ្ដោះអាសន្នចេញវិញបន្ទាប់ពីទទួលទិន្នន័យរួច
-        await update.message.reply_text("✅ បានទទួលទិន្នន័យរួចរាល់!", reply_markup=ReplyKeyboardRemove())
+        # 🌟 លុប Reply Keyboard ដោយផ្ញើសារខ្នាតតូចមួយ ("‌" = zero-width character) រួចលុបសារនោះចោលភ្លាមៗ
+        # វិធីនេះធ្វើឲ្យអ្នកប្រើឃើញតែសារព័ត៌មានចុងក្រោយតែមួយប៉ុណ្ណោះ គ្មានសារ "បានទទួលទិន្នន័យ" លេចឡើងជាប់ភ្នែកទេ
+        temp_msg = await update.message.reply_text("\u200b", reply_markup=ReplyKeyboardRemove())
+        try:
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_msg.message_id)
+        except Exception:
+            pass  # បើលុបមិនបានក៏មិនអីទេ ព្រោះសារនេះមើលទៅទទេ មិនរំខានអ្វីច្រើន
 
         reply_msg = build_attendance_message(f"✅ បានកំណត់ពេលប្រកួតថ្មីជោគជ័យ!\n📅 ថ្ងៃ៖ {custom_date_text} | ⏰ ម៉ោង៖ {custom_time_text}")
         await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
