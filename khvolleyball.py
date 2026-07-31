@@ -79,10 +79,11 @@ courts_database = {
 }
 
 selected_court_key = None
-custom_date_text = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=7))).strftime("%d/%m/%Y")
-custom_time_text = "06:30 PM - 08:30 PM"  
-pending_friend_join = {}  
 ICT = datetime.timezone(datetime.timedelta(hours=7))
+custom_date_text = datetime.datetime.now(ICT).strftime("%d/%m/%Y")
+custom_time_text = "06:30 PM - 08:30 PM"  
+
+pending_friend_join = {}  
 
 def has_khmer(text):
     return any('\u1780' <= char <= '\u17ff' for char in text)
@@ -466,8 +467,14 @@ def execute_shuffle():
           f"🔹 <b>ក្រុម A:</b> {', '.join(format_a)}\n" \
           f"<code>----------------------------------</code>\n" \
           f"🔸 <b>ក្រុម B:</b> {', '.join(format_b)}\n\n" \
-          f"📢 ចុចប៊ូតុងខាងក្រោមដើម្បីកត់ត្រាពិន្ទុរហ័ស ឬបោះឆ្នោត MVP!"
-    return msg, None
+          f"📢 ការចាប់គូត្រូវបានសម្រេច! ត្រៀមខ្លួនសម្រាប់ប្រកួត!"
+          
+    # 🌟 បង្កើតប៊ូតុងត្រឡប់ក្រោយសុទ្ធសាធពេល Shuffle (មិនទាន់លេងចប់ ដូច្នេះមិនបាច់មានពិន្ទុទេ)
+    shuffle_back_kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")]
+    ])
+    
+    return msg, shuffle_back_kb
 
 def set_match_score(sets_a, sets_b):
     global player_stats, match_score, previous_match_score, previous_player_stats
@@ -578,11 +585,12 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("♻️ បានសម្អាតបញ្ជីឈ្មោះវត្តមាន ពិន្ទុ និងការបោះឆ្នោត MVP រួចរាល់!")
 
 async def shuffle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg, err = execute_shuffle()
-    if err:
-        await update.message.reply_text(err)
+    msg, kb = execute_shuffle()
+    if isinstance(msg, type(None)):
+        # กรณี err
+        await update.message.reply_text(kb) # នៅទីនេះ kb គឺជាអត្ថបទ Error
     else:
-        await update.message.reply_text(msg, parse_mode="HTML", reply_markup=get_score_keyboard())
+        await update.message.reply_text(msg, parse_mode="HTML", reply_markup=kb)
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = build_stats_text()
@@ -639,7 +647,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(info_msg, parse_mode="HTML")
 
 # ==========================================
-# ៧. MESSAGE HANDLER សម្រាប់ REPLIES (JOIN ឱ្យមិត្ត)
+# 7. MESSAGE HANDLER សម្រាប់ REPLIES (JOIN ឱ្យមិត្ត)
 # ==========================================
 async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
@@ -656,7 +664,6 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     global custom_date_text, custom_time_text
     if update.effective_message and update.effective_message.web_app_data:
         raw_data = update.effective_message.web_app_data.data
-        # ទម្រង់ដែលផ្ញើមក៖ DATE:DD/MM/YYYY | TIME:06:30 PM - 08:30 PM
         try:
             parts = raw_data.split(" | ")
             for p in parts:
@@ -773,14 +780,14 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         reply_msg = build_attendance_message(status_txt)
         await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
 
-    # ៨. ចុច ប៊ូតុង 🔀 ចាប់គូ (Shuffle)
+    # ៨. ចុច ប៊ូតុង 🔀 ចាប់គូ (Shuffle) - 🌟 មិនបង្ហាញ Score Buttons នៅទីនេះទេ
     elif data == "btn_shuffle":
-        msg, err = execute_shuffle()
-        if err:
-            await query.answer(err, show_alert=True)
+        msg, kb_or_err = execute_shuffle()
+        if isinstance(kb_or_err, str):
+            await query.answer(kb_or_err, show_alert=True)
         else:
             await query.answer("🔀 បានចាប់គូស្វ័យប្រវត្តជោគជ័យ!", show_alert=True)
-            await query.message.reply_text(msg, parse_mode="HTML", reply_markup=get_score_keyboard())
+            await query.message.reply_text(msg, parse_mode="HTML", reply_markup=kb_or_err)
 
     # ៩. ចុច ប៊ូតុង 📊 ស្ថិតិប្រកួត (Stats)
     elif data == "btn_stats":
@@ -915,7 +922,7 @@ def main() -> None:
     # Callbacks (Buttons)
     app.add_handler(CallbackQueryHandler(button_callback_handler))
     
-    print("Bot with Custom Date, Time Web App, MVP, and 6-Set Options is running smoothly...")
+    print("Bot with Clean Shuffle (No Score Buttons) is running smoothly...")
     app.run_polling()
 
 if __name__ == "__main__":
