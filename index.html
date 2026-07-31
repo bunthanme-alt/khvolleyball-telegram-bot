@@ -41,20 +41,17 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // កំណត់ថ្ងៃខែស្វ័យប្រវត្តជាថ្ងៃនេះពេលបើកដំបូង
         document.getElementById('matchDate').valueAsDate = new Date();
 
         function submitData() {
-            let dateVal = document.getElementById("matchDate").value; // ទម្រង់ YYYY-MM-DD
+            let dateVal = document.getElementById("matchDate").value; 
             let fromVal = document.getElementById("timeFrom").value;
             let endVal = document.getElementById("timeEnd").value;
             
-            // បម្លែង Date ជា DD/MM/YYYY ស្អាតបាត
             let formattedDate = formatDate(dateVal);
             let formattedFrom = convertTo12Hour(fromVal);
             let formattedEnd = convertTo12Hour(endVal);
 
-            // បញ្ជូនទម្រង់ជា JSON ឬ String ទៅ Bot
             let finalResult = `DATE:${formattedDate} | TIME:${formattedFrom} - ${formattedEnd}`;
 
             if (tg && tg.sendData) {
