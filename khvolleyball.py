@@ -1,24 +1,101 @@
 import random
 import os
 import json
+import hmac
+import hashlib
+from urllib.parse import parse_qsl
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 import datetime
 import time
 import requests
 import re
-from telegram import (
-    Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo,
-    KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
 # ==========================================
-# ០. ការកំណត់ Web App URL (សំខាន់ណាស់!)
+# ០. ការកំណត់ Bot Token / Username / Web App URL (សំខាន់ណាស់!)
 # ==========================================
+# 👉 ដាក់ Telegram Bot Token របស់អ្នកនៅទីនេះ (ដូចគ្នានឹងតម្លៃដែលធ្លាប់ដាក់ក្នុង main())
+BOT_TOKEN = "8066577030:AAEq3L0j0AhqWX6WFrodP5Yk4PLnNxR3WP8"
+
+# 👉 ដាក់ username របស់ bot (គ្មាន @ ពីមុខ) ឧទាហរណ៍៖ "khvolleyball_bot"
+# ត្រូវការសម្រាប់ស្ថាបនា Direct Link (https://t.me/<username>?startapp=...)
+BOT_USERNAME = ""
+
 # 👉 ដាក់ URL ចុងក្រោយពិតប្រាកដដែល host ឯកសារ HTML កំណត់ ថ្ងៃ/ម៉ោង របស់អ្នកនៅទីនេះ
-# ត្រូវជា HTTPS ដាច់ខាត ហើយ domain នេះត្រូវបាន /setdomain ជាមួយ @BotFather ផងដែរ
-WEB_APP_URL = "https://bunthanme-alt.github.io/khvolleyball-telegram-bot/"
+# ត្រូវជា HTTPS ដាច់ខាត ហើយត្រូវបាន register ជា "Main Mini App" របស់ bot នេះតាមរយៈ
+# @BotFather -> /newapp (ដាក់ URL ដូចគ្នា) ដើម្បីឲ្យ Direct Link ដំណើរការ
+WEB_APP_URL = "https://your-domain.example.com/timeform.html"
+
+TELEGRAM_API_BASE = f"https://api.telegram.org/bot{BOT_TOKEN}"
+
+
+# ==========================================
+# ០.១ ជំនួយអ៊ិនកូដ/ឌិកូដ Chat ID ចូលក្នុង startapp parameter
+# ==========================================
+# startapp អនុញ្ញាតតែ A-Z a-z 0-9 _ - ប៉ុណ្ណោះ (មិនអនុញ្ញាតសញ្ញា negative "-" នៅដើមឡើយ
+# ក្នុងន័យថាជា sign ព្រោះវាច្រឡំជាមួយសញ្ញា "-" allowed character ដែរ ដូច្នេះប្រើ prefix
+# អក្សរដើម្បីសម្គាល់ថាតើ chat_id ដើមជាលេខអវិជ្ជមាន (Group/Supergroup) ឬអវិជ្ជមាន (Private)
+def encode_chat_ref(chat_id: int) -> str:
+    if chat_id < 0:
+        return f"m{abs(chat_id)}"
+    return f"p{chat_id}"
+
+def decode_chat_ref(ref: str):
+    try:
+        if ref.startswith("m"):
+            return -int(ref[1:])
+        elif ref.startswith("p"):
+            return int(ref[1:])
+    except Exception:
+        pass
+    return None
+
+
+# ==========================================
+# ០.២ ផ្ទៀងផ្ទាត់ Telegram WebApp initData (សុវត្ថិភាព)
+# ==========================================
+# តាមឯកសារផ្លូវការ Telegram: https://core.telegram.org/bots/webapps#validating-data-received-via-the-web-app
+def verify_telegram_init_data(init_data: str, max_age_seconds: int = 86400):
+    try:
+        parsed = dict(parse_qsl(init_data, strict_parsing=True))
+        received_hash = parsed.pop("hash", None)
+        if not received_hash:
+            return None
+
+        data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(parsed.items()))
+        secret_key = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
+        computed_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+
+        if not hmac.compare_digest(computed_hash, received_hash):
+            print("⚠️ [INIT DATA VERIFY] hash mismatch — request មិនមែនមកពី Telegram ពិតប្រាកដទេ")
+            return None
+
+        auth_date = int(parsed.get("auth_date", 0))
+        if time.time() - auth_date > max_age_seconds:
+            print("⚠️ [INIT DATA VERIFY] initData ចាស់ពេក (auth_date ហួសកំណត់)")
+            return None
+
+        return parsed
+    except Exception as e:
+        print(f"⚠️ [INIT DATA VERIFY ERROR] {e}")
+        return None
+
+
+# ==========================================
+# ០.៣ ផ្ញើសារទៅ Telegram ដោយផ្ទាល់តាម HTTP API (ប្រើក្នុង HTTP Server thread ដែលមិនមែន async)
+# ==========================================
+def tg_api_send_message(chat_id, text, reply_markup=None, parse_mode="HTML"):
+    try:
+        payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
+        res = requests.post(f"{TELEGRAM_API_BASE}/sendMessage", json=payload, timeout=10)
+        if res.status_code != 200:
+            print(f"⚠️ [TG API SEND ERROR] status={res.status_code} body={res.text}")
+    except Exception as e:
+        print(f"⚠️ [TG API SEND ERROR] {e}")
 
 # ==========================================
 # ១. ប្រព័ន្ធបន្លំ Server សម្រាប់ Render
@@ -34,6 +111,77 @@ class FakeServer(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
+
+    def do_OPTIONS(self):
+        # 🌟 CORS preflight — ត្រូវការព្រោះ Web App ហៅ fetch() ជា cross-origin request
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
+    def _send_json(self, status, payload):
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self):
+        # 🌟 Endpoint ថ្មី: /save-time — Web App (timeform.html) ហៅមកទីនេះដោយផ្ទាល់តាម fetch()
+        # ជំនួសឲ្យប្រើ tg.sendData() (ដែលដំណើរការតែក្នុង private chat តាម Keyboard button ប៉ុណ្ណោះ)
+        if self.path != "/save-time":
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            raw_body = self.rfile.read(content_length)
+            body = json.loads(raw_body.decode("utf-8"))
+        except Exception as e:
+            print(f"⚠️ [SAVE-TIME PARSE ERROR] {e}")
+            self._send_json(400, {"ok": False, "error": "invalid_json"})
+            return
+
+        init_data = body.get("initData", "")
+        date_val = str(body.get("date", "")).strip()
+        time_val = str(body.get("time", "")).strip()
+        ref = str(body.get("ref", "")).strip()
+
+        # ១. ផ្ទៀងផ្ទាត់ថា request នេះមកពី Telegram ពិតប្រាកដ (សុវត្ថិភាព)
+        verified = verify_telegram_init_data(init_data)
+        if not verified:
+            self._send_json(401, {"ok": False, "error": "invalid_init_data"})
+            return
+
+        # ២. ឌិកូដ chat_id ដើមពី ref (បានបញ្ចូលក្នុង startapp param ពេលបង្កើត button)
+        chat_id = decode_chat_ref(ref)
+        if chat_id is None:
+            self._send_json(400, {"ok": False, "error": "invalid_ref"})
+            return
+
+        if not date_val or not time_val:
+            self._send_json(400, {"ok": False, "error": "missing_date_or_time"})
+            return
+
+        # ៣. Update global state ហើយ save
+        global custom_date_text, custom_time_text
+        custom_date_text = date_val
+        custom_time_text = time_val
+        save_state()
+
+        # ៤. ផ្ញើសារថ្មីមួយចូល Group/Private chat ដើម ដែលមានបញ្ជីវត្តមាន + ម៉ោងថ្មី
+        # (ផ្ញើសារថ្មី ជំនួសការ edit សារចាស់ ព្រោះ Direct Link mode មិនដឹង message_id ដើមទេ)
+        reply_msg = build_attendance_message(
+            f"✅ បានកំណត់ពេលប្រកួតថ្មីជោគជ័យ!\n📅 ថ្ងៃ៖ {custom_date_text} | ⏰ ម៉ោង៖ {custom_time_text}"
+        )
+        keyboard_dict = get_main_inline_keyboard(chat_id).to_dict()
+        tg_api_send_message(chat_id, reply_msg, reply_markup=keyboard_dict)
+
+        self._send_json(200, {"ok": True})
 
 def start_fake_server():
     port = int(os.environ.get("PORT", 10000))
@@ -186,7 +334,14 @@ def load_state():
 # ==========================================
 # ៤. HELPER FUNCTIONS & INLINE KEYBOARDS
 # ==========================================
-def get_main_inline_keyboard():
+def get_main_inline_keyboard(chat_id):
+    # 🌟 ចំណុចសំខាន់៖ InlineKeyboardButton(web_app=...) និង KeyboardButton(web_app=...)
+    # អាចប្រើបានតែក្នុង private chat ប៉ុណ្ណោះ (ដែនកំណត់ផ្លូវការរបស់ Telegram) — មិនអាចប្រើក្នុង
+    # Group Chat បានទាល់តែសោះ។ ដូច្នេះប្រើ URL Direct-Link ជំនួសវិញ ដែលដំណើរការទាំង Group និង
+    # Private chat: ចុចហើយ Telegram នឹងបើក Mini App ក្នុង private chat context ដោយស្វ័យប្រវត្តិ
+    # ហើយ Mini App ដឹងថាមកពី chat/message ណា តាមរយៈ startapp parameter ដែល encode chat_id ចូល
+    time_webapp_url = f"https://t.me/{BOT_USERNAME}?startapp={encode_chat_ref(chat_id)}"
+
     keyboard = [
         [
             InlineKeyboardButton("✅ Join ខ្លួនឯង", callback_data="btn_join_self"),
@@ -197,10 +352,7 @@ def get_main_inline_keyboard():
             InlineKeyboardButton("➖ Leave មិត្តភក្តិ", callback_data="btn_leave_friend")
         ],
         [
-            # 🌟 ប្តូរពី web_app=WebAppInfo(...) ទៅជា callback_data ធម្មតា
-            # មូលហេតុ: InlineKeyboardButton + web_app មិនអាចប្រើ tg.sendData() ត្រឡប់ទិន្នន័យមក bot បានទេ
-            # (Telegram support នោះតែលើ KeyboardButton / Reply Keyboard ប៉ុណ្ណោះ)
-            InlineKeyboardButton("⏰ កំណត់ថ្ងៃ និងម៉ោង", callback_data="btn_open_time_webapp"),
+            InlineKeyboardButton("⏰ កំណត់ថ្ងៃ និងម៉ោង", url=time_webapp_url),
             InlineKeyboardButton("🏟️ ជ្រើសរើសតារាង", callback_data="menu_court")
         ],
         [
@@ -216,13 +368,6 @@ def get_main_inline_keyboard():
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
-
-def get_time_webapp_reply_keyboard():
-    """Reply Keyboard (មិនមែន Inline) ដែលអាចប្រើ web_app ដើម្បីទទួល sendData() បាន"""
-    keyboard = [
-        [KeyboardButton(text="⏰ ចុចទីនេះដើម្បីកំណត់ថ្ងៃ/ម៉ោង", web_app=WebAppInfo(url=WEB_APP_URL))]
-    ]
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
 
 def get_score_keyboard():
     keyboard = [
@@ -566,7 +711,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     success, status_txt = process_user_join_multiple(raw_input)
     reply_msg = build_attendance_message(status_txt)
-    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(update.effective_chat.id))
 
 async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
@@ -578,7 +723,7 @@ async def leave_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     reply_msg = build_attendance_message(status_txt)
-    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(update.effective_chat.id))
 
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not today_players and not waiting_list:
@@ -587,12 +732,12 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     header_txt = f"📋 - បញ្ជីវត្តមានកីឡាករចូលរួមប្រគួតថ្ងៃនេះ ({len(today_players)}/12 នាក់) - 📋"
     reply_msg = build_attendance_message(header_txt)
-    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(update.effective_chat.id))
 
 async def match_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ!"
     reply_msg = build_attendance_message(header_txt)
-    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+    await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(update.effective_chat.id))
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global today_players, waiting_list, current_teams, match_score, previous_match_score, previous_player_stats, selected_court_key, custom_date_text, custom_time_text, player_stats, mvp_votes
@@ -682,82 +827,7 @@ async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
         success, status_txt = process_user_join_multiple(raw_names)
         reply_msg = build_attendance_message(status_txt)
-        await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
-
-# 🌟 ទទួលទិន្នន័យ ថ្ងៃ និងម៉ោង ពី Web App (បើកតាម Reply KeyboardButton)
-async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global custom_date_text, custom_time_text
-    if update.effective_message and update.effective_message.web_app_data:
-        raw_data = update.effective_message.web_app_data.data
-        try:
-            parts = raw_data.split(" | ")
-            for p in parts:
-                if p.startswith("DATE:"):
-                    custom_date_text = p.replace("DATE:", "")
-                elif p.startswith("TIME:"):
-                    custom_time_text = p.replace("TIME:", "")
-        except Exception:
-            custom_time_text = raw_data
-
-        # 🌟 ទាញយក reference នៃសារបញ្ជីដើម + សារ prompt ពី persistent storage
-        # (រក្សាទុកតាំងពីពេលចុច "⏰ កំណត់ថ្ងៃ" នៅ pending_time_update dict)
-        user_id = update.effective_user.id
-        pending_info = pending_time_update.pop(str(user_id), None)
-
-        save_state()  # save ទាំង custom_date_text/custom_time_text និង pending_time_update ដែលទើប pop ចេញ
-
-        # 🌟 លុប Reply Keyboard ដោយផ្ញើសារខ្នាតតូចមួយ ("​" = zero-width character) រួចលុបសារនោះចោលភ្លាមៗ
-        # ⚠️ FIX: ដាក់ក្នុង try/except ដើម្បីកុំឲ្យ error ណាមួយ (ឧ. network glitch) block
-        # មិនឲ្យកូដដំណើរការបន្តទៅដល់ចំណុច edit_message_text/fallback ខាងក្រោម
-        try:
-            temp_msg = await update.message.reply_text("\u200b", reply_markup=ReplyKeyboardRemove())
-            try:
-                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_msg.message_id)
-            except Exception as e:
-                print(f"⚠️ [DELETE TEMP MSG ERROR] {e}")
-        except Exception as e:
-            print(f"⚠️ [SEND TEMP MSG ERROR] {e}")
-
-        # 🌟 លុបសារ "👇 សូមចុចប៊ូតុងខាងក្រោម..." ចោល ព្រោះលែងចាំបាច់ទៀតហើយ
-        if pending_info and pending_info.get("prompt_message_id"):
-            try:
-                await context.bot.delete_message(
-                    chat_id=pending_info.get("prompt_chat_id", update.effective_chat.id),
-                    message_id=pending_info["prompt_message_id"]
-                )
-            except Exception as e:
-                print(f"⚠️ [DELETE PROMPT MSG ERROR] {e}")
-
-        reply_msg = build_attendance_message(f"✅ បានកំណត់ពេលប្រកួតថ្មីជោគជ័យ!\n📅 ថ្ងៃ៖ {custom_date_text} | ⏰ ម៉ោង៖ {custom_time_text}")
-
-        # 🌟 ចំណុចសំខាន់៖ ព្យាយាម "edit" សារបញ្ជីដើម (ដែលមាន Join/Leave buttons) ដោយផ្ទាល់
-        # ជំនួសឲ្យផ្ញើសារថ្មីមួយទៀត ដូច្នេះបញ្ជីនឹង Update ភ្លាមៗនៅកន្លែងដដែល
-        origin_chat_id = pending_info.get("origin_chat_id") if pending_info else None
-        origin_message_id = pending_info.get("origin_message_id") if pending_info else None
-
-        edited_successfully = False
-        if origin_chat_id and origin_message_id:
-            try:
-                await context.bot.edit_message_text(
-                    chat_id=origin_chat_id,
-                    message_id=origin_message_id,
-                    text=reply_msg,
-                    parse_mode="HTML",
-                    reply_markup=get_main_inline_keyboard()
-                )
-                edited_successfully = True
-            except Exception as e:
-                # បើសារដើមត្រូវបានលុប ឬចាស់ពេក (Telegram មិនអនុញ្ញាតឲ្យ edit) នោះនឹងផ្ញើសារថ្មីជំនួសវិញ
-                print(f"⚠️ [EDIT ORIGIN LIST ERROR] {e}")
-        else:
-            # ⚠️ FIX: log ករណីដែល pending_info គ្មាន ដើម្បីជួយ debug (ឧ. state ចោលបាត់ ឬ user_id មិនត្រូវគ្នា)
-            print(f"⚠️ [NO PENDING INFO] user_id={user_id}, pending_info={pending_info}")
-
-        if not edited_successfully:
-            try:
-                await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
-            except Exception as e:
-                print(f"⚠️ [FALLBACK SEND ERROR] {e}")
+        await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(update.effective_chat.id))
 
 # ==========================================
 # 8. CALLBACK QUERY HANDLER (សម្រាប់ប៊ូតុងចុច)
@@ -780,7 +850,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             return
         await query.answer(f"✅ [{user_name}] ចុះឈ្មោះប្រកួតជោគជ័យ!", show_alert=True)
         reply_msg = build_attendance_message(status_txt)
-        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(query.message.chat_id))
 
     # ២. ចុច Leave ខ្លួនឯង
     elif data == "btn_leave_self":
@@ -790,7 +860,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             return
         await query.answer(f"❌ បានដកឈ្មោះ [{user_name}] ចេញពីរវត្តមានរួចរាល់!", show_alert=True)
         reply_msg = build_attendance_message(status_txt)
-        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(query.message.chat_id))
 
     # ៣. ចុច Join មិត្តភក្តិ
     elif data == "btn_join_friend":
@@ -827,15 +897,15 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
                 success, status_txt = process_user_leave(target_name)
                 await query.answer(f"❌ បានដកឈ្មោះ [{target_name}] រួចរាល់!", show_alert=True)
                 reply_msg = build_attendance_message(status_txt)
-                await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+                await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(query.message.chat_id))
             else:
                 await query.answer("💡 រកមិនឃើញទិន្នន័យឈ្មោះឡើយ!", show_alert=True)
                 reply_msg = build_attendance_message()
-                await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+                await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(query.message.chat_id))
         except Exception:
             await query.answer("💡 មានបញ្ហាក្នុងការដកឈ្មោះ!", show_alert=True)
             reply_msg = build_attendance_message()
-            await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+            await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(query.message.chat_id))
 
     # 6. ចុច Menu តារាង
     elif data == "menu_court":
@@ -860,25 +930,12 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         await query.answer(f"🏟️ បានជ្រើសរើសយក៖ {court_name}!", show_alert=True)
         status_txt = f"🏟️ បានជ្រើសរើសយក៖ {court_name} [✅ កក់តារាងរួចរាល់]"
         reply_msg = build_attendance_message(status_txt)
-        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(query.message.chat_id))
 
-    # 7.1 🌟 ចុច ⏰ កំណត់ថ្ងៃ និងម៉ោង -> បើក Reply Keyboard ដែលមាន Web App
-    elif data == "btn_open_time_webapp":
-        await query.answer()
-        prompt_msg = await query.message.reply_text(
-            "👇 សូមចុចប៊ូតុងខាងក្រោមដើម្បីបើក Web App កំណត់ថ្ងៃ និងម៉ោង៖",
-            reply_markup=get_time_webapp_reply_keyboard()
-        )
-        # 🌟 រក្សាទុក chat_id + message_id នៃសារបញ្ជីដើម ព្រមទាំងសារ prompt ទៅក្នុង
-        # persistent storage (មិនមែន context.user_data ដែលនៅតែក្នុង RAM ប៉ុណ្ណោះ)
-        # ដើម្បីធានាថាទិន្នន័យនេះមិនបាត់ បើ server restart/sleep ចន្លោះពេលអ្នកកំពុងបំពេញ Web App
-        pending_time_update[str(user_id)] = {
-            "origin_chat_id": query.message.chat_id,
-            "origin_message_id": query.message.message_id,
-            "prompt_chat_id": prompt_msg.chat_id,
-            "prompt_message_id": prompt_msg.message_id
-        }
-        save_state()
+    # 🌟 ចំណាំ៖ ប៊ូតុង "⏰ កំណត់ថ្ងៃ និងម៉ោង" ឥឡូវនេះជា URL button ធម្មតា (មិនមែន callback_data ទេ)
+    # ដូច្នេះពេលចុច Telegram នឹងបើក Mini App ដោយផ្ទាល់ គ្មាន callback_query ណាមួយចូលមកកាន់
+    # bot នេះទេ។ ការទទួល និងកែសម្រួលទិន្នន័យត្រូវបានធ្វើឡើងវិញនៅក្នុង FakeServer.do_POST()
+    # (endpoint /save-time) ដែល Web App ហៅមកដោយផ្ទាល់តាម fetch() — មិនត្រូវការ branch នេះទៀតទេ
 
     # 8. ចុច ប៊ូតុង 🔀 ចាប់គូ (Shuffle)
     elif data == "btn_shuffle":
@@ -949,7 +1006,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         await query.answer("👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះប្រកួតថ្ងៃនេះ!", show_alert=True)
         header_txt = "👉 តោះៗ! សូមបងប្អូនប្រញាប់រួសរាន់ចុះឈ្មោះចូលរួមប្រគួតថ្ងៃនេះ!"
         reply_msg = build_attendance_message(header_txt)
-        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(query.message.chat_id))
 
     # 12. ចុច របៀបប្រើប្រាស់លម្អិត
     elif data == "btn_help_guide":
@@ -990,19 +1047,20 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     elif data == "menu_back":
         await query.answer("🔙 ត្រឡប់មកផ្ទាំងដើមវិញ!", show_alert=False)
         reply_msg = build_attendance_message()
-        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard())
+        await query.edit_message_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(query.message.chat_id))
 
 # ==========================================
 # 9. MAIN FUNCTION
 # ==========================================
 def main() -> None:
-    token = "8066577030:AAEq3L0j0AhqWX6WFrodP5Yk4PLnNxR3WP8"  # 👈 ដាក់ Telegram Bot Token របស់អ្នកនៅទីនេះ
+    if not BOT_TOKEN or not BOT_USERNAME:
+        print("⚠️ [CONFIG ERROR] សូមបំពេញ BOT_TOKEN និង BOT_USERNAME នៅផ្នែកខាងលើឯកសារនេះជាមុនសិន!")
 
     load_state()
 
     threading.Thread(target=start_fake_server, daemon=True).start()
 
-    app = ApplicationBuilder().token(token).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Commands
     app.add_handler(CommandHandler("join", join_command))
@@ -1016,8 +1074,6 @@ def main() -> None:
     app.add_handler(CommandHandler("match", match_command))
 
     # Message Handlers
-    # 🌟 ត្រូវដាក់ WEB_APP_DATA ពិនិត្យមុន handler ធម្មតា ដើម្បីចាប់ទិន្នន័យពី Web App ត្រឹមត្រូវ
-    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, web_app_data_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_reply_handler))
 
     # Callbacks (Buttons)
