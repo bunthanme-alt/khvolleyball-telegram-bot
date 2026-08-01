@@ -340,7 +340,7 @@ def get_main_inline_keyboard(chat_id):
     # Group Chat បានទាល់តែសោះ។ ដូច្នេះប្រើ URL Direct-Link ជំនួសវិញ ដែលដំណើរការទាំង Group និង
     # Private chat: ចុចហើយ Telegram នឹងបើក Mini App ក្នុង private chat context ដោយស្វ័យប្រវត្តិ
     # ហើយ Mini App ដឹងថាមកពី chat/message ណា តាមរយៈ startapp parameter ដែល encode chat_id ចូល
-    time_webapp_url = f"https://t.me/{ebttechkhBot}?startapp={encode_chat_ref(chat_id)}"
+    time_webapp_url = f"https://t.me/{BOT_USERNAME}?startapp={encode_chat_ref(chat_id)}"
 
     keyboard = [
         [
