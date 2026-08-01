@@ -26,7 +26,7 @@ BOT_USERNAME = ""
 # 👉 ដាក់ URL ចុងក្រោយពិតប្រាកដដែល host ឯកសារ HTML កំណត់ ថ្ងៃ/ម៉ោង របស់អ្នកនៅទីនេះ
 # ត្រូវជា HTTPS ដាច់ខាត ហើយត្រូវបាន register ជា "Main Mini App" របស់ bot នេះតាមរយៈ
 # @BotFather -> /newapp (ដាក់ URL ដូចគ្នា) ដើម្បីឲ្យ Direct Link ដំណើរការ
-WEB_APP_URL = "https://your-domain.example.com/timeform.html"
+WEB_APP_URL = "https://khvolleyball-telegram-bot.onrender.com/save-time"
 
 TELEGRAM_API_BASE = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
