@@ -148,6 +148,7 @@
 
         <button class="submit-btn" id="saveBtn" onclick="submitData()">បញ្ជាក់ការកំណត់ (Save)</button>
         <div class="error-msg" id="errorMsg"></div>
+        <pre id="debugBox" style="margin-top:16px; padding:10px; background:#f0f0f0; border-radius:8px; font-size:11px; white-space:pre-wrap; word-break:break-all; max-height:200px; overflow:auto;"></pre>
     </div>
 
     <script>
@@ -155,9 +156,24 @@
         tg.expand();
         tg.ready();
 
+        // 🌟 DEBUG បណ្ដោះអាសន្ន — បង្ហាញ initData/initDataUnsafe ដើម្បីឃើញច្បាស់ថា Telegram
+        // ផ្ញើអ្វីមកឲ្យ Web App ពិតប្រាកដ។ លុបផ្នែកនេះចោលក្រោយពេលដោះស្រាយបញ្ហារួច។
+        (function showDebug() {
+            const box = document.getElementById('debugBox');
+            const info = {
+                initData_raw: tg.initData || "(empty)",
+                initData_length: (tg.initData || "").length,
+                initDataUnsafe: tg.initDataUnsafe || {},
+                start_param: (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || "(missing)",
+                version: tg.version,
+                platform: tg.platform
+            };
+            box.textContent = "DEBUG:\n" + JSON.stringify(info, null, 2);
+        })();
+
         // 🌟 URL server (Render) — កន្លែងដែល endpoint /save-time កំពុងដំណើរការ
         // 👉 ត្រូវប្តូរជា URL Render App ពិតប្រាកដរបស់អ្នក ប្រសិនបើមិនមែនតម្លៃនេះ
-        const SERVER_URL = "https://khvolleyball-telegram-bot.onrender.com";
+        const SERVER_URL = "https://khvolleyball-telegram-bot.onrender.com/save-time";
 
         // កំណត់ថ្ងៃខែស្វ័យប្រវត្តជាថ្ងៃនេះ
         document.getElementById('matchDate').valueAsDate = new Date();
