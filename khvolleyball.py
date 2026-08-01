@@ -21,7 +21,7 @@ BOT_TOKEN = "8066577030:AAEq3L0j0AhqWX6WFrodP5Yk4PLnNxR3WP8"
 
 # 👉 ដាក់ username របស់ bot (គ្មាន @ ពីមុខ) ឧទាហរណ៍៖ "khvolleyball_bot"
 # ត្រូវការសម្រាប់ស្ថាបនា Direct Link (https://t.me/<username>?startapp=...)
-BOT_USERNAME = ""
+BOT_USERNAME = "ebttechkhBot"
 
 # 👉 ដាក់ URL ចុងក្រោយពិតប្រាកដដែល host ឯកសារ HTML កំណត់ ថ្ងៃ/ម៉ោង របស់អ្នកនៅទីនេះ
 # ត្រូវជា HTTPS ដាច់ខាត ហើយត្រូវបាន register ជា "Main Mini App" របស់ bot នេះតាមរយៈ
