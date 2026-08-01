@@ -109,6 +109,19 @@
             transform: scale(0.97);
             opacity: 0.9;
         }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-msg {
+            color: #e74c3c;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 16px;
+        }
     </style>
 </head>
 <body>
@@ -133,37 +146,87 @@
             <input type="time" id="timeEnd" value="20:30">
         </div>
 
-        <button class="submit-btn" onclick="submitData()">បញ្ជាក់ការកំណត់ (Save)</button>
+        <button class="submit-btn" id="saveBtn" onclick="submitData()">បញ្ជាក់ការកំណត់ (Save)</button>
+        <div class="error-msg" id="errorMsg"></div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
+        tg.ready();
+
+        // 🌟 URL server (Render) — កន្លែងដែល endpoint /save-time កំពុងដំណើរការ
+        // 👉 ត្រូវប្តូរជា URL Render App ពិតប្រាកដរបស់អ្នក ប្រសិនបើមិនមែនតម្លៃនេះ
+        const SERVER_URL = "https://khvolleyball-telegram-bot.onrender.com/save-time";
 
         // កំណត់ថ្ងៃខែស្វ័យប្រវត្តជាថ្ងៃនេះ
         document.getElementById('matchDate').valueAsDate = new Date();
 
-        function submitData() {
-            let dateVal = document.getElementById("matchDate").value; 
+        const saveBtn = document.getElementById('saveBtn');
+        const errorMsg = document.getElementById('errorMsg');
+
+        function showError(text) {
+            errorMsg.textContent = text;
+        }
+
+        async function submitData() {
+            errorMsg.textContent = "";
+
+            let dateVal = document.getElementById("matchDate").value;
             let fromVal = document.getElementById("timeFrom").value;
             let endVal = document.getElementById("timeEnd").value;
-            
-            if(!dateVal || !fromVal || !endVal) {
-                alert("⚠️ សូមបំពេញថ្ងៃ និងម៉ោងឱ្យបានត្រឹមត្រូវ!");
+
+            if (!dateVal || !fromVal || !endVal) {
+                showError("⚠️ សូមបំពេញថ្ងៃ និងម៉ោងឱ្យបានត្រឹមត្រូវ!");
                 return;
             }
 
             let formattedDate = formatDate(dateVal);
             let formattedFrom = convertTo12Hour(fromVal);
             let formattedEnd = convertTo12Hour(endVal);
+            let formattedTime = `${formattedFrom} - ${formattedEnd}`;
 
-            let finalResult = `DATE:${formattedDate} | TIME:${formattedFrom} - ${formattedEnd}`;
+            // 🌟 ចំណុចសំខាន់៖ Web App នេះបើកតាម Direct Link (t.me/bot?startapp=...) ដូច្នេះ
+            // tg.sendData() មិនដំណើរការទេ (វាដំណើរការតែពេលបើកតាម Keyboard Button ក្នុង
+            // private chat ប៉ុណ្ណោះ)។ ជំនួសវិញ យើងផ្ញើទិន្នន័យទៅ server bot ដោយផ្ទាល់តាម
+            // fetch() ព្រមទាំង initData (សម្រាប់ server ផ្ទៀងផ្ទាត់សុវត្ថិភាព) និង start_param
+            // (ដែល encode ថា Group/Chat មួយណាដែលត្រូវ update ត្រឡប់)
+            const initData = tg.initData || "";
+            const ref = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) ? tg.initDataUnsafe.start_param : "";
 
-            if (tg && tg.sendData) {
-                tg.sendData(finalResult);
-                tg.close();
-            } else {
-                alert("បានកំណត់៖ " + finalResult);
+            if (!ref) {
+                showError("⚠️ មិនអាចរកឃើញ Group/Chat ដើមទេ សូមចុចប៊ូតុងម្ដងទៀតពី Group/Chat។");
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = "កំពុងរក្សាទុក...";
+
+            try {
+                const response = await fetch(SERVER_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        date: formattedDate,
+                        time: formattedTime,
+                        ref: ref,
+                        initData: initData
+                    })
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok && result.ok) {
+                    tg.close();
+                } else {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = "បញ្ជាក់ការកំណត់ (Save)";
+                    showError("⚠️ មិនអាចរក្សាទុកបានទេ សូមព្យាយាមម្ដងទៀត។ (" + (result.error || response.status) + ")");
+                }
+            } catch (err) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = "បញ្ជាក់ការកំណត់ (Save)";
+                showError("⚠️ មានបញ្ហាភ្ជាប់បណ្ដាញ សូមព្យាយាមម្ដងទៀត។");
             }
         }
 
