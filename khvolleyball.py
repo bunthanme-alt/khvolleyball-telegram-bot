@@ -19,14 +19,19 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 # 👉 ដាក់ Telegram Bot Token របស់អ្នកនៅទីនេះ (ដូចគ្នានឹងតម្លៃដែលធ្លាប់ដាក់ក្នុង main())
 BOT_TOKEN = "8066577030:AAEq3L0j0AhqWX6WFrodP5Yk4PLnNxR3WP8"
 
-# 👉 ដាក់ username របស់ bot (គ្មាន @ ពីមុខ) ឧទាហរណ៍៖ "khvolleyball_bot"
-# ត្រូវការសម្រាប់ស្ថាបនា Direct Link (https://t.me/<username>?startapp=...)
+# 👉 ដាក់ username របស់ bot (គ្មាន @ ពីមុខ) ឧទាហរណ៍៖ "ebttechkhBot"
+# ត្រូវការសម្រាប់ស្ថាបនា Direct Link (https://t.me/<username>/<short_name>?startapp=...)
 BOT_USERNAME = "ebttechkhBot"
+
+# 👉 short_name របស់ Mini App ដែល @BotFather ផ្ដល់ជូនក្រោយពេលបង្កើត (/newapp)
+# Direct Link ត្រឹមត្រូវត្រូវការទាំង BOT_USERNAME និង MINI_APP_SHORT_NAME ព្រមគ្នា
+# ទម្រង់៖ https://t.me/{BOT_USERNAME}/{MINI_APP_SHORT_NAME}?startapp=...
+MINI_APP_SHORT_NAME = "timeform"
 
 # 👉 ដាក់ URL ចុងក្រោយពិតប្រាកដដែល host ឯកសារ HTML កំណត់ ថ្ងៃ/ម៉ោង របស់អ្នកនៅទីនេះ
 # ត្រូវជា HTTPS ដាច់ខាត ហើយត្រូវបាន register ជា "Main Mini App" របស់ bot នេះតាមរយៈ
 # @BotFather -> /newapp (ដាក់ URL ដូចគ្នា) ដើម្បីឲ្យ Direct Link ដំណើរការ
-WEB_APP_URL = "https://bunthanme-alt.github.io/khvolleyball-telegram-bot/"
+WEB_APP_URL = "https://your-domain.example.com/timeform.html"
 
 TELEGRAM_API_BASE = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
@@ -340,7 +345,7 @@ def get_main_inline_keyboard(chat_id):
     # Group Chat បានទាល់តែសោះ។ ដូច្នេះប្រើ URL Direct-Link ជំនួសវិញ ដែលដំណើរការទាំង Group និង
     # Private chat: ចុចហើយ Telegram នឹងបើក Mini App ក្នុង private chat context ដោយស្វ័យប្រវត្តិ
     # ហើយ Mini App ដឹងថាមកពី chat/message ណា តាមរយៈ startapp parameter ដែល encode chat_id ចូល
-    time_webapp_url = f"https://t.me/{BOT_USERNAME}?startapp={encode_chat_ref(chat_id)}"
+    time_webapp_url = f"https://t.me/{BOT_USERNAME}/{MINI_APP_SHORT_NAME}?startapp={encode_chat_ref(chat_id)}"
 
     keyboard = [
         [
@@ -1053,8 +1058,8 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 # 9. MAIN FUNCTION
 # ==========================================
 def main() -> None:
-    if not BOT_TOKEN or not BOT_USERNAME:
-        print("⚠️ [CONFIG ERROR] សូមបំពេញ BOT_TOKEN និង BOT_USERNAME នៅផ្នែកខាងលើឯកសារនេះជាមុនសិន!")
+    if not BOT_TOKEN or not BOT_USERNAME or not MINI_APP_SHORT_NAME:
+        print("⚠️ [CONFIG ERROR] សូមបំពេញ BOT_TOKEN, BOT_USERNAME, និង MINI_APP_SHORT_NAME នៅផ្នែកខាងលើឯកសារនេះជាមុនសិន!")
 
     load_state()
 
