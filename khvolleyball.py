@@ -30,7 +30,7 @@ logger = logging.getLogger("volleyball_bot")
 # ==========================================
 # 0.1 CONFIGURATION
 # ==========================================
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8066577030:AAEq3L0j0AhqWX6WFrodP5Yk4PLnNxR3WP8")
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "ebttechkhBot")
 MINI_APP_SHORT_NAME = os.environ.get("MINI_APP_SHORT_NAME", "timeform")
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "https://your-domain.example.com/timeform.html")
