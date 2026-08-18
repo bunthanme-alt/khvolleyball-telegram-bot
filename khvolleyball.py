@@ -5,7 +5,6 @@ import hmac
 import hashlib
 import logging
 import threading
-import datetime
 import time
 import re
 from urllib.parse import parse_qsl
@@ -13,6 +12,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.error import TelegramError
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler,
     MessageHandler, filters, ContextTypes,
@@ -30,7 +30,7 @@ logger = logging.getLogger("volleyball_bot")
 # ==========================================
 # 0.1 CONFIGURATION
 # ==========================================
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8066577030:AAEq3L0j0AhqWX6WFrodP5Yk4PLnNxR3WP8")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "ebttechkhBot")
 MINI_APP_SHORT_NAME = os.environ.get("MINI_APP_SHORT_NAME", "timeform")
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "https://your-domain.example.com/timeform.html")
@@ -309,7 +309,32 @@ courts_database = {
     "3": {"name": "តារាងបាល់ទះ (ពូ PM)", "link": "https://maps.app.goo.gl/2SgVAeTSXcdPRH9R6?g_st=ipc"},
 }
 
-ICT = datetime.timezone(datetime.timedelta(hours=7))
+# File extensions commonly used in the "fake photo" scam currently spreading on
+# Telegram — a file is named to look like an image (e.g. "image_05-08-2026.exe")
+# but is actually an executable or archive carrying malware. We check the real
+# extension (the part after the last dot), so disguised names are still caught.
+DANGEROUS_FILE_EXTENSIONS = {
+    # Executables / scripts
+    ".exe", ".msi", ".bat", ".cmd", ".com", ".scr", ".pif", ".vbs", ".vbe",
+    ".js", ".jse", ".wsf", ".wsh", ".ps1", ".psm1", ".jar", ".apk",
+    ".dll", ".sys", ".cpl", ".hta", ".msc", ".reg", ".lnk", ".gadget",
+    ".application", ".msp", ".inf", ".deb", ".rpm",
+    # Archives — often used to smuggle the above past casual inspection
+    ".zip", ".rar", ".7z", ".tar", ".gz", ".tgz", ".iso", ".cab",
+}
+
+# Domains considered safe to link in the group. A link is flagged only if its
+# domain does NOT contain any of these as a substring — "goo.gl" is included
+# so the court Map links this bot itself posts (courts_database above) are
+# never mistakenly flagged if a member re-shares one.
+SAFE_DOMAINS = [
+    "youtube.com",
+    "youtu.be",
+    "facebook.com",
+    "google.com",
+    "goo.gl",
+    "t.me",
+]
 
 # ==========================================
 # 3. STATE — single shared state for the one group this bot serves.
@@ -329,8 +354,8 @@ previous_match_score = None
 previous_player_stats = None
 mvp_votes = {}
 selected_court_key = None
-custom_date_text = datetime.datetime.now(ICT).strftime("%d/%m/%Y")
-custom_time_text = "06:30 PM - 08:30 PM"
+custom_date_text = None  # None = not yet set by admin via the Mini App
+custom_time_text = None  # None = not yet set by admin via the Mini App
 pending_friend_join = {}  # str(user_id) -> True
 _last_time_update_ts = 0  # throttle guard for /save-time
 
@@ -523,10 +548,12 @@ def build_attendance_message(header_txt=""):
         sections.append(header_txt)
 
     # --- Schedule block ---
+    date_display = f"<b>{date_txt}</b>" if date_txt else "<i>មិនទាន់កំណត់</i>  🟡"
+    time_display = f"<b>{time_txt}</b>" if time_txt else "<i>មិនទាន់កំណត់</i>  🟡"
     schedule_block = (
         "🏐 <b>ព័ត៌មានប្រកួតថ្ងៃនេះ</b>\n"
-        f"🗓️  ថ្ងៃ    : <b>{date_txt}</b>\n"
-        f"⏰  ម៉ោង   : <b>{time_txt}</b>"
+        f"🗓️  ថ្ងៃ    : {date_display}\n"
+        f"⏰  ម៉ោង   : {time_display}"
     )
     sections.append(schedule_block)
 
@@ -919,8 +946,8 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         previous_match_score = None
         previous_player_stats = None
         selected_court_key = None
-        custom_date_text = datetime.datetime.now(ICT).strftime("%d/%m/%Y")
-        custom_time_text = "06:30 PM - 08:30 PM"
+        custom_date_text = None
+        custom_time_text = None
         player_stats = {}
         mvp_votes = {}
         save_state()
@@ -970,11 +997,13 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         time_txt = custom_time_text
         court_key = selected_court_key
 
+    date_display = f"<b>{date_txt}</b>" if date_txt else "<i>មិនទាន់កំណត់</i>  🟡"
+    time_display = f"<b>{time_txt}</b>" if time_txt else "<i>មិនទាន់កំណត់</i>  🟡"
     header_block = (
         "🏐 <b>ព័ត៌មានកីឡាបាល់ទះមិត្តភាព</b>\n"
         "🏆  ការប្រគួត : មិត្តភាព និងសាមគ្គីភាព\n"
-        f"🗓️  ថ្ងៃ      : <b>{date_txt}</b>\n"
-        f"⏰  ម៉ោង     : <b>{time_txt}</b>"
+        f"🗓️  ថ្ងៃ      : {date_display}\n"
+        f"⏰  ម៉ោង     : {time_display}"
     )
 
     court_lines = []
@@ -1110,28 +1139,131 @@ async def calculate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ==========================================
-# 7. MESSAGE HANDLER FOR REPLIES (join-friend flow)
+# 7. SCAM PROTECTION HELPERS
 # ==========================================
-async def message_reply_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
+async def is_message_sender_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Admins/creator are exempt from scam scanning (they can share any file/link)."""
+    chat = update.effective_chat
+    user = update.effective_user
+    if chat.type == "private":
+        return True
+    try:
+        member = await context.bot.get_chat_member(chat.id, user.id)
+        return member.status in ("creator", "administrator")
+    except TelegramError as e:
+        logger.warning(f"[ADMIN CHECK ERROR] {e}")
+        return False
+
+
+_URL_PATTERN = re.compile(r"(https?://[^\s]+)")
+_DOMAIN_PATTERN = re.compile(r"https?://(?:www\.)?([^/\s]+)")
+
+
+def contains_untrusted_link(text: str) -> bool:
+    """True if `text` contains a URL whose domain is not on SAFE_DOMAINS."""
+    urls = _URL_PATTERN.findall(text)
+    for url in urls:
+        domain_match = _DOMAIN_PATTERN.search(url)
+        if not domain_match:
+            continue
+        domain = domain_match.group(1).lower()
+        is_safe = any(safe_domain in domain for safe_domain in SAFE_DOMAINS)
+        if not is_safe:
+            return True
+    return False
+
+
+async def _take_scam_action(update: Update, context: ContextTypes.DEFAULT_TYPE, sender_name: str, reason: str):
+    """Delete the offending message (if the bot has permission) and warn the group."""
     chat_id = update.effective_chat.id
+    message_id = update.message.message_id
 
-    with state_lock:
-        is_pending = pending_friend_join.get(str(user_id), False)
+    deleted = False
+    try:
+        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+        deleted = True
+    except TelegramError as e:
+        logger.warning(f"[SCAM GUARD] Failed to delete message {message_id} in chat {chat_id}: {e}")
 
-    if is_pending:
-        raw_names = update.message.text.strip()
-        with state_lock:
-            pending_friend_join.pop(str(user_id), None)
-            save_state()
+    if deleted:
+        warn_msg = (
+            "🚨 <b>រកឃើញខ្លឹមសារគួរឲ្យសង្ស័យ — បានលុបស្វ័យប្រវត្តិ</b>\n"
+            f"{DIVIDER}\n"
+            f"👤 អ្នកផ្ញើ  : {sender_name}\n"
+            f"⚠️ មូលហេតុ  : {reason}\n"
+            f"{DIVIDER}\n"
+            "🛡️ សូមប្រុងប្រយ័ត្ន កុំចុចទាញយក ឬបើក File/Link ដែលមិនច្បាស់ប្រភពជាដាច់ខាត។"
+        )
+    else:
+        warn_msg = (
+            "🚨 <b>រកឃើញខ្លឹមសារគួរឲ្យសង្ស័យខ្លាំង</b>\n"
+            f"{DIVIDER}\n"
+            f"👤 អ្នកផ្ញើ  : {sender_name}\n"
+            f"⚠️ មូលហេតុ  : {reason}\n"
+            f"{DIVIDER}\n"
+            "❗️ Bot មិនអាចលុបសារនេះបានទេ (ត្រូវការសិទ្ធិ Admin លុបសារ) — សូម Admin ជួយលុបភ្លាមៗ "
+            "ហើយកុំចុចទាញយក/ចុចលើវាជាដាច់ខាត!"
+        )
 
-        success, status_txt = process_user_join_multiple(raw_names)
-        reply_msg = build_attendance_message(status_txt)
-        await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(chat_id))
+    await context.bot.send_message(chat_id=chat_id, text=warn_msg, parse_mode="HTML")
 
 
 # ==========================================
-# 8. CALLBACK QUERY HANDLER (buttons)
+# 8. CONTENT MODERATION HANDLER
+# ==========================================
+# Runs on every non-command message (text, captions, documents, photos, etc.).
+# A scam currently spreading on Telegram sends a file named to look like a
+# photo (e.g. "image_05-08-2026_10-36-18.exe") but that is actually an
+# executable/archive carrying malware — and separately, messages containing
+# links to untrusted domains are a common phishing vector. Admins are exempt
+# since they can be trusted to share legitimate content. If nothing is
+# flagged, plain text falls through to the join-friend reply flow.
+#
+# Requires the bot to be a Group Admin with "Delete messages" permission for
+# the delete step — without it, this falls back to warning the group only.
+async def content_moderation_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.from_user:
+        return
+
+    user = update.message.from_user
+    user_id = user.id
+    chat_id = update.effective_chat.id
+    sender_name = f"{user.first_name} {user.last_name or ''}".strip()
+
+    if not await is_message_sender_admin(update, context):
+        # 1. Dangerous file check (real extension, even if the filename is disguised).
+        document = update.message.document
+        if document and document.file_name:
+            ext = os.path.splitext(document.file_name.lower())[1]
+            if ext in DANGEROUS_FILE_EXTENSIONS:
+                reason = f"File គ្រោះថ្នាក់ (<code>{document.file_name}</code>, ប្រភេទ <code>{ext}</code>)"
+                await _take_scam_action(update, context, sender_name, reason)
+                return
+
+        # 2. Untrusted link check (message text or media caption).
+        text_to_check = update.message.text or update.message.caption or ""
+        if text_to_check and contains_untrusted_link(text_to_check):
+            await _take_scam_action(update, context, sender_name, "តំណភ្ជាប់ (Link) មិនស្គាល់ប្រភពច្បាស់លាស់")
+            return
+
+    # 3. Join-friend reply flow — only for plain, non-command text messages.
+    if update.message.text and not update.message.text.startswith("/"):
+        with state_lock:
+            is_pending = pending_friend_join.get(str(user_id), False)
+
+        if is_pending:
+            raw_names = update.message.text.strip()
+            with state_lock:
+                pending_friend_join.pop(str(user_id), None)
+                save_state()
+
+            success, status_txt = process_user_join_multiple(raw_names)
+            reply_msg = build_attendance_message(status_txt)
+            await update.message.reply_text(reply_msg, parse_mode="HTML", reply_markup=get_main_inline_keyboard(chat_id))
+
+
+# ==========================================
+# 9. CALLBACK QUERY HANDLER (buttons)
 # ==========================================
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global selected_court_key, mvp_votes
@@ -1345,7 +1477,8 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             "• <code>🔀 ចាប់គូ (Shuffle)</code>\n"
             "• <code>📊 ស្ថិតិប្រកួត</code> — មើលឈ្នះ/ចាញ់\n"
             "• <code>🏅 បោះឆ្នោត MVP</code>\n"
-            "• <code>⚔️ Match</code> — ប្រកាសកោះហៅសមាជិក"
+            "• <code>⚔️ Match</code> — ប្រកាសកោះហៅសមាជិក\n"
+            "• <code>↩️ Undo ពិន្ទុ</code> — ត្រឡប់ពិន្ទុចុងក្រោយមកវិញ (ប្រើពេលចុចខុស)"
         )
         section_3 = (
             "🔹 <b>៣. Commands</b>\n"
@@ -1355,15 +1488,25 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             "• <code>/shuffle</code>\n"
             "• <code>/manual [ក្រុមA] v [ក្រុមB]</code>\n"
             "• <code>/setscore [សិតA] [សិតB]</code>\n"
-            "• <code>/undo</code>\n"
+            "• <code>/undo</code> — ត្រឡប់ពិន្ទុ (Score) ចុងក្រោយបំផុតមកវិញ\n"
             "• <code>/calculate [ថ្លៃតារាង] [ថ្លៃទឹក]</code>\n"
             "• <code>/clear</code>"
+        )
+        section_4 = (
+            "🔹 <b>៤. ការការពារ Scam</b>\n"
+            "🛡️ Bot ស្កេនរាល់សារ/File ដែលផ្ញើចូល Group ដោយស្វ័យប្រវត្តិ\n"
+            "• File គ្រោះថ្នាក់ (<code>.exe</code>, <code>.rar</code>, <code>.zip</code>, "
+            "<code>.msi</code>, <code>.bat</code>, <code>.scr</code>...) សូម្បីតែក្លែងបន្លំជាឈ្មោះរូបភាព\n"
+            "• Link ដែលមិនស្គាល់ប្រភព (ក្រៅពី YouTube, Facebook, Google, t.me)\n"
+            "→ ត្រូវលុបភ្លាមៗ + ព្រមានក្នុង Group\n"
+            "👮 Admin ត្រូវបានលើកលែងពីការត្រួតពិនិត្យនេះ"
         )
         guide_msg = (
             "📖 <b>សៀវភៅណែនាំប្រើប្រាស់ BOT</b>\n"
             f"{DIVIDER}\n{section_1}\n"
             f"{DIVIDER}\n{section_2}\n"
-            f"{DIVIDER}\n{section_3}"
+            f"{DIVIDER}\n{section_3}\n"
+            f"{DIVIDER}\n{section_4}"
         )
         back_keyboard = InlineKeyboardMarkup(
             [[InlineKeyboardButton("🔙 ត្រឡប់ទៅផ្ទាំងដើមវិញ", callback_data="menu_back")]]
@@ -1378,14 +1521,14 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
 
 # ==========================================
-# 9. GLOBAL ERROR HANDLER
+# 10. GLOBAL ERROR HANDLER
 # ==========================================
 async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.exception("Unhandled exception while processing an update", exc_info=context.error)
 
 
 # ==========================================
-# 10. MAIN
+# 11. MAIN
 # ==========================================
 def main() -> None:
     if not BOT_TOKEN or not BOT_USERNAME or not MINI_APP_SHORT_NAME:
@@ -1415,7 +1558,7 @@ def main() -> None:
     app.add_handler(CommandHandler("undo", undo_command))
     app.add_handler(CommandHandler("calculate", calculate_command))
 
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_reply_handler))
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, content_moderation_handler))
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
     app.add_error_handler(global_error_handler)
