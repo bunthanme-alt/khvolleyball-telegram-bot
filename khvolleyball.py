@@ -1012,7 +1012,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         marker = "✅" if is_selected else "🟡"
         label = f"<b>{key}. {court['name']}</b> {marker}"
         if is_selected:
-            label += "  <i>(កំពុងប្រើ)</i>"
+            label += "  <i>(បានជ្រើសរើស)</i>"
         line = f"🏟️ {label}"
         if court["link"] != "មិនទាន់មាន":
             line += f"\n   🔗 <a href='{court['link']}'>មើល Map</a>"
